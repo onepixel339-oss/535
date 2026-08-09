@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>تحدي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800;900&family=Almarai:wght@400;700;800&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0B0E1A;
+    --bg-glow-1: rgba(255,182,39,0.16);
+    --bg-glow-2: rgba(0,217,192,0.14);
+    --surface:#12162A;
+    --surface-2:#1A1F33;
+    --border: #262B42;
+    --amber:#FFB627;
+    --amber-deep:#412402;
+    --teal:#00D9C0;
+    --teal-deep:#04342C;
+    --violet:#9B6BFF;
+    --violet-deep:#241B4A;
+    --red:#FF3B5C;
+    --red-deep:#3A0E19;
+    --lime:#B4FF39;
+    --text:#F5F3ED;
+    --text-dim:#94978F;
+    --text-dim-2:#6E7183;
+    --font-display: 'Cairo', sans-serif;
+    --font-body: 'Almarai', sans-serif;
+    --font-num: 'Orbitron', sans-serif;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{
+    height:100%;
+    background:var(--bg);
+  }
+
+  body{
+    font-family:var(--font-body);
+    color:var(--text);
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 600px 400px at 15% -5%, var(--bg-glow-1), transparent 60%),
+      radial-gradient(ellipse 600px 500px at 100% 20%, var(--bg-glow-2), transparent 55%),
+      var(--bg);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding: 24px 14px 60px;
+    overflow-x:hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+
+  #app{
+    width:100%;
+    max-width:420px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+
+  .hidden{ display:none !important; }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:22px 18px;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-bottom: 4px;
+  }
+  .brand-dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--amber);
+    box-shadow: 0 0 14px 2px var(--amber);
+  }
+  .brand-text{
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:14px;
+    letter-spacing:1px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+  }
+
+  h1.title{
+    font-family:var(--font-display);
+    font-weight:900;
+    font-size:30px;
+    text-align:center;
+    line-height:1.25;
+    margin-bottom:6px;
+  }
+  h1.title span{ color:var(--amber); }
+
+  p.subtitle{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:14px;
+    line-height:1.7;
+    margin-bottom:22px;
+  }
+
+  label.field-label{
+    display:block;
+    font-size:13px;
+    color:var(--text-dim);
+    margin-bottom:8px;
+    font-weight:700;
+  }
+
+  input.text-input{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 16px;
+    color:var(--text);
+    font-family:var(--font-body);
+    font-size:15px;
+    font-weight:700;
+    outline:none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input.text-input:focus{
+    border-color:var(--amber);
+    box-shadow: 0 0 0 3px rgba(255,182,39,0.18);
+  }
+  input.text-input::placeholder{ color:var(--text-dim-2); font-weight:400; }
+
+  .field-error{
+    color:var(--red);
+    font-size:12.5px;
+    margin-top:8px;
+    font-weight:700;
+    display:none;
+  }
+  .field-error.show{ display:block; }
+
+  .avatar-label{
+    display:block;
+    font-size:13px;
+    color:var(--text-dim);
+    margin: 20px 0 10px;
+    font-weight:700;
+  }
+  .avatar-grid{
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap:8px;
+  }
+  .avatar-opt{
+    aspect-ratio: 1;
+    border-radius:12px;
+    background:var(--surface-2);
+    border:1.5px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    cursor:pointer;
+    transition: transform .12s ease, border-color .12s ease, background .12s ease;
+  }
+  .avatar-opt:active{ transform: scale(0.92); }
+  .avatar-opt.selected{
+    border-color:var(--amber);
+    background: var(--amber-deep);
+    box-shadow: 0 0 0 3px rgba(255,182,39,0.14);
+  }
+
+  .btn{
+    width:100%;
+    border:none;
+    border-radius:14px;
+    padding:16px 18px;
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:16px;
+    cursor:pointer;
+    transition: transform .1s ease, filter .15s ease, opacity .15s ease;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+  .btn:active{ transform: scale(0.98); }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  .btn-primary{
+    background: linear-gradient(135deg, var(--amber), #FF9A3D);
+    color:#241300;
+  }
+  .btn-primary:not(:disabled):hover{ filter:brightness(1.06); }
+
+  .btn-secondary{
+    background:var(--surface-2);
+    color:var(--text);
+    border:1.5px solid var(--border);
+  }
+  .btn-secondary:not(:disabled):hover{ border-color: var(--text-dim); }
+
+  .btn-danger-outline{
+    background: transparent;
+    color: var(--red);
+    border: 1.5px solid rgba(255,59,92,0.4);
+  }
+
+  .btn-row{ display:flex; gap:10px; margin-top:14px; }
+  .btn-row .btn{ margin-top:0; }
+
+  .mt{ margin-top:14px; }
+  .mt-lg{ margin-top:22px; }
+
+  /* ---------- Top status bar during quiz ---------- */
+  .status-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 4px 4px 0;
+  }
+  .player-chip{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .player-chip .av{
+    width:30px; height:30px; border-radius:50%;
+    background:var(--amber-deep);
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px;
+  }
+  .player-chip .nm{
+    font-size:13px;
+    color:var(--text-dim);
+    font-weight:700;
+    max-width:110px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .score-box{
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+  }
+  .score-box .lbl{
+    font-size:10.5px;
+    color:var(--text-dim-2);
+    font-weight:700;
+    letter-spacing:0.5px;
+  }
+  .score-box .val{
+    font-family:var(--font-num);
+    font-weight:800;
+    font-size:22px;
+    color:var(--amber);
+    min-width: 2ch;
+    text-align:left;
+    transition: transform .18s ease;
+  }
+  .score-box .val.bump{
+    animation: scoreBump .45s ease;
+  }
+  @keyframes scoreBump{
+    0%{ transform:scale(1); }
+    30%{ transform:scale(1.35); color:var(--lime); }
+    100%{ transform:scale(1); }
+  }
+
+  .progress-track{
+    height:4px;
+    background:var(--surface-2);
+    border-radius:4px;
+    overflow:hidden;
+    margin: 12px 4px 0;
+  }
+  .progress-fill{
+    height:100%;
+    background: linear-gradient(90deg, var(--teal), var(--amber));
+    border-radius:4px;
+    transition: width .3s ease;
+  }
+  .progress-caption{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:var(--text-dim-2);
+    margin: 6px 4px 0;
+    font-weight:700;
+  }
+
+  /* ---------- Question card ---------- */
+  .type-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 14px;
+    border-radius:20px;
+    font-size:12.5px;
+    font-weight:800;
+    margin: 0 auto 18px;
+  }
+
+  .timer-wrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:16px;
+  }
+  .timer-ring-holder{ position:relative; width:76px; height:76px; }
+  .timer-ring-holder svg{ transform: rotate(-90deg); }
+  .timer-ring-bg{ fill:none; stroke:var(--surface-2); stroke-width:6; }
+  .timer-ring-fg{
+    fill:none;
+    stroke-width:6;
+    stroke-linecap:round;
+    transition: stroke-dashoffset .1s linear, stroke .3s ease;
+  }
+  .timer-num{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-num);
+    font-weight:700;
+    font-size:22px;
+  }
+
+  .question-card{
+    background:var(--surface-2);
+    border-radius:16px;
+    padding:20px 16px;
+    margin-bottom:16px;
+    text-align:center;
+  }
+  .question-text{
+    font-size:16px;
+    line-height:1.75;
+    font-weight:700;
+  }
+
+  .options-list{ display:flex; flex-direction:column; gap:10px; }
+  .option-btn{
+    background:var(--surface-2);
+    border:1.5px solid var(--border);
+    border-radius:12px;
+    padding:13px 16px;
+    text-align:right;
+    color:var(--text);
+    font-family:var(--font-body);
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+    transition: border-color .12s ease, background .12s ease, transform .08s ease;
+  }
+  .option-btn:active{ transform: scale(0.985); }
+  .option-btn.correct{
+    border-color:var(--lime);
+    background: rgba(180,255,57,0.10);
+    color:var(--lime);
+  }
+  .option-btn.wrong{
+    border-color:var(--red);
+    background: rgba(255,59,92,0.12);
+    color:var(--red);
+  }
+  .option-btn.disabled-opt{ pointer-events:none; opacity:0.55; }
+  .option-btn.disabled-opt.correct,
+  .option-btn.disabled-opt.wrong{ opacity:1; }
+
+  .feedback-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-top:14px;
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:14px;
+    min-height:20px;
+  }
+  .feedback-row.correct{ color:var(--lime); }
+  .feedback-row.wrong{ color:var(--red); }
+
+  /* ---------- Result screens ---------- */
+  .result-score{
+    text-align:center;
+    margin: 6px 0 20px;
+  }
+  .result-score .big-num{
+    font-family:var(--font-num);
+    font-weight:800;
+    font-size:56px;
+    color:var(--amber);
+    line-height:1;
+  }
+  .result-score .cap{
+    color:var(--text-dim);
+    font-size:12.5px;
+    font-weight:700;
+    margin-top:8px;
+    letter-spacing:0.5px;
+  }
+
+  .stat-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  .stat-box{
+    flex:1;
+    background:var(--surface-2);
+    border-radius:12px;
+    padding:14px 10px;
+    text-align:center;
+  }
+  .stat-box .n{ font-family:var(--font-num); font-weight:700; font-size:20px; }
+  .stat-box .l{ font-size:11px; color:var(--text-dim); margin-top:4px; font-weight:700; }
+
+  .bonus-pitch{
+    background: var(--red-deep);
+    border:1px solid rgba(255,59,92,0.35);
+    border-radius:16px;
+    padding:16px;
+    margin-top:18px;
+  }
+  .bonus-pitch h3{
+    font-family:var(--font-display);
+    font-size:15.5px;
+    color:var(--red);
+    margin-bottom:8px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .bonus-pitch p{
+    font-size:13px;
+    color:var(--text-dim);
+    line-height:1.75;
+    margin-bottom:4px;
+  }
+  .bonus-pitch b{ color:var(--text); }
+
+  /* ---------- Leaderboard ---------- */
+  .lb-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .lb-title{
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:18px;
+  }
+  .refresh-btn{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    border-radius:10px;
+    padding:8px 12px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:var(--font-body);
+  }
+
+  .podium{
+    display:flex;
+    align-items:flex-end;
+    gap:8px;
+    margin-bottom:18px;
+  }
+  .podium-slot{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+  }
+  .podium-slot .p-av{
+    width:40px; height:40px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:19px;
+    background:var(--surface-2);
+    border:2px solid var(--border);
+  }
+  .podium-slot.p1 .p-av{ width:52px; height:52px; font-size:24px; border-color:var(--amber); box-shadow:0 0 16px rgba(255,182,39,0.35);}
+  .podium-slot.p2 .p-av{ border-color: #C7CAD9; }
+  .podium-slot.p3 .p-av{ border-color: #D18A56; }
+  .podium-slot .p-name{
+    font-size:11.5px;
+    font-weight:700;
+    max-width:80px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .podium-slot .p-score{
+    font-family:var(--font-num);
+    font-weight:700;
+    font-size:13px;
+    color:var(--amber);
+  }
+  .podium-bar{
+    width:100%;
+    border-radius:8px 8px 0 0;
+    background:var(--surface-2);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding-top:6px;
+    font-family:var(--font-num);
+    font-weight:800;
+    color:var(--text-dim);
+  }
+  .podium-slot.p1 .podium-bar{ height:76px; background: linear-gradient(180deg, var(--amber-deep), var(--surface-2)); color:var(--amber); }
+  .podium-slot.p2 .podium-bar{ height:56px; }
+  .podium-slot.p3 .podium-bar{ height:40px; }
+
+  .lb-list{ display:flex; flex-direction:column; gap:8px; }
+  .lb-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--surface-2);
+    border-radius:10px;
+    padding:10px 12px;
+  }
+  .lb-row.me{ border:1.5px solid var(--amber); }
+  .lb-rank{
+    font-family:var(--font-num);
+    font-weight:700;
+    color:var(--text-dim);
+    width:22px;
+    text-align:center;
+    font-size:13px;
+  }
+  .lb-av{
+    width:28px; height:28px; border-radius:50%;
+    background:var(--surface);
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px;
+    flex-shrink:0;
+  }
+  .lb-name{
+    flex:1;
+    font-size:13px;
+    font-weight:700;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .lb-score{
+    font-family:var(--font-num);
+    font-weight:700;
+    color:var(--amber);
+    font-size:14px;
+  }
+
+  .empty-note{
+    text-align:center;
+    color:var(--text-dim-2);
+    font-size:13px;
+    padding: 20px 0;
+  }
+
+  .spinner{
+    width:22px; height:22px;
+    border-radius:50%;
+    border:3px solid var(--surface-2);
+    border-top-color:var(--amber);
+    animation: spin .7s linear infinite;
+    margin:20px auto;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .footer-note{
+    text-align:center;
+    color:var(--text-dim-2);
+    font-size:11.5px;
+    margin-top:4px;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <div class="brand-text">التحدي</div>
+  </div>
+
+  <!-- ============ SCREEN: ENTRY ============ -->
+  <section id="screen-entry" class="card">
+    <h1 class="title">جاهز تدخل <span>التحدي؟</span></h1>
+    <p class="subtitle">20 سؤال، نقاط، وترتيب مباشر. اكتب اسمك واختار أفاتار وابدأ.</p>
+
+    <label class="field-label" for="name-input">اسمك أو النيك نيم</label>
+    <input id="name-input" class="text-input" type="text" placeholder="مثلاً: أحمد" maxlength="20" autocomplete="off">
+    <div id="name-error" class="field-error"></div>
+
+    <label class="avatar-label">اختار أفاتار</label>
+    <div id="avatar-grid" class="avatar-grid"></div>
+
+    <button id="start-btn" class="btn btn-primary mt-lg">ابدأ التحدي 🚀</button>
+
+    <div id="checking-note" class="footer-note hidden">بنتأكد من الاسم…</div>
+  </section>
+
+  <!-- ============ SCREEN: ALREADY PLAYED ============ -->
+  <section id="screen-already" class="card hidden">
+    <h1 class="title">لعبت التحدي <span>قبل كده</span> 🎯</h1>
+    <p class="subtitle">كل شخص يلعب مرة واحدة بس عشان الترتيب يفضل عادل.</p>
+    <div class="stat-row">
+      <div class="stat-box"><div class="n" id="already-score">-</div><div class="l">نقاطك</div></div>
+      <div class="stat-box"><div class="n" id="already-correct">-</div><div class="l">إجابات صح</div></div>
+    </div>
+    <button id="already-lb-btn" class="btn btn-primary mt-lg">شوف الترتيب 🏆</button>
+  </section>
+
+  <!-- ============ SCREEN: QUIZ (shared for main + bonus) ============ -->
+  <section id="screen-quiz" class="card hidden">
+    <div class="status-bar">
+      <div class="player-chip">
+        <div class="av" id="quiz-player-av"></div>
+        <div class="nm" id="quiz-player-name"></div>
+      </div>
+      <div class="score-box">
+        <span class="lbl">النقاط</span>
+        <span class="val" id="quiz-score">0</span>
+      </div>
+    </div>
+
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-caption">
+      <span id="progress-caption-left">سؤال 1 من 20</span>
+      <span id="progress-caption-right">الجولة الأساسية</span>
+    </div>
+
+    <div style="margin-top:20px; text-align:center;">
+      <span class="type-badge" id="type-badge"></span>
+    </div>
+
+    <div class="timer-wrap">
+      <div class="timer-ring-holder">
+        <svg width="76" height="76" viewBox="0 0 76 76">
+          <circle class="timer-ring-bg" cx="38" cy="38" r="32"></circle>
+          <circle class="timer-ring-fg" id="timer-ring" cx="38" cy="38" r="32"></circle>
+        </svg>
+        <div class="timer-num" id="timer-num">--</div>
+      </div>
+    </div>
+
+    <div class="question-card">
+      <p class="question-text" id="question-text">…</p>
+    </div>
+
+    <div class="options-list" id="options-list"></div>
+
+    <div class="feedback-row" id="feedback-row"></div>
+  </section>
+
+  <!-- ============ SCREEN: MAIN RESULT ============ -->
+  <section id="screen-result" class="card hidden">
+    <h1 class="title">خلصت الجولة <span>الأساسية!</span></h1>
+    <div class="result-score">
+      <div class="big-num" id="result-score">0</div>
+      <div class="cap">نقطة</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="n" id="result-correct">0/20</div><div class="l">إجابات صح</div></div>
+      <div class="stat-box"><div class="n" id="result-rank">-</div><div class="l">ترتيبك الحالي</div></div>
+    </div>
+
+    <div class="bonus-pitch">
+      <h3>🎲 عاوز تخاطر بشوية نقاط؟</h3>
+      <p>10 أسئلة إضافية <b>اختيارية</b>. كل إجابة صح <b>+20 نقطة</b>، وكل إجابة غلط بتخصم <b>12 نقطة</b> من رصيدك الكلي.</p>
+    </div>
+
+    <div class="btn-row">
+      <button id="skip-bonus-btn" class="btn btn-secondary">لأ، كفاية كده</button>
+      <button id="start-bonus-btn" class="btn btn-primary">يلا مخاطرة ⚡</button>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: FINAL RESULT ============ -->
+  <section id="screen-final" class="card hidden">
+    <h1 class="title" id="final-title">كده <span>خلصت!</span></h1>
+    <div class="result-score">
+      <div class="big-num" id="final-score">0</div>
+      <div class="cap">نقطة نهائية</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="n" id="final-bonus-delta">-</div><div class="l">من الـ Bonus</div></div>
+      <div class="stat-box"><div class="n" id="final-rank">-</div><div class="l">ترتيبك</div></div>
+    </div>
+    <button id="final-lb-btn" class="btn btn-primary mt-lg">شوف الترتيب كامل 🏆</button>
+  </section>
+
+  <!-- ============ SCREEN: LEADERBOARD ============ -->
+  <section id="screen-leaderboard" class="card hidden">
+    <div class="lb-header">
+      <div class="lb-title">🏆 الترتيب</div>
+      <button id="lb-refresh-btn" class="refresh-btn">تحديث ↻</button>
+    </div>
+    <div id="lb-loading" class="spinner"></div>
+    <div id="lb-content" class="hidden">
+      <div class="podium" id="lb-podium"></div>
+      <div class="lb-list" id="lb-list"></div>
+      <div id="lb-empty" class="empty-note hidden">محدش لعب لسه… يلا كن أول واحد!</div>
+    </div>
+  </section>
+
+  <div class="footer-note">اتعمل بحب لفعاليتكم 💛</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     1) CONFIG — كل الأرقام قابلة للتعديل من هنا
+  ============================================================ */
+  const SUPABASE_URL = "https://jkyfpsuamctwufwwoizt.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_RP021jjyWosA9YXYjYV_Ag_d9JRniPc";
+
+  const CONFIG = {
+    timers: {           // بالثواني
+      culture: 12,
+      speed: 7,
+      riddle_math: 25,
+      riddle_lateral: 20,
+      riddle_pattern: 15,
+      bonus: 15
+    },
+    points: {
+      culture:        { base: 10, bonusMax: 5,  bonusMin: 1 },
+      speed:          { base: 5,  bonusMax: 5,  bonusMin: 1 },
+      riddle_math:    { base: 15, bonusMax: 10, bonusMin: 2 },
+      riddle_lateral: { base: 15, bonusMax: 10, bonusMin: 2 },
+      riddle_pattern: { base: 15, bonusMax: 10, bonusMin: 2 }
+    },
+    bonusRound: {
+      correctPoints: 20,
+      wrongPenalty: -12
+    },
+    leaderboardLimit: 20,
+    avatars: ["😎","🦁","🐯","🚀","🔥","🎯","🐺","🦊","👾","🎮","🧠","⚡","🐸","🦄","🌟"]
+  };
+
+  const TYPE_META = {
+    culture:        { label: "ثقافة عامة",    icon: "📚", color: "var(--teal)",   deep: "var(--teal-deep)"  },
+    speed:          { label: "تحدي سريع",     icon: "⚡", color: "var(--red)",    deep: "var(--red-deep)"   },
+    riddle_math:    { label: "رياضة ومعادلة", icon: "🔢", color: "var(--violet)", deep: "var(--violet-deep)"},
+    riddle_lateral: { label: "لغز تفكير",     icon: "🧩", color: "var(--violet)", deep: "var(--violet-deep)"},
+    riddle_pattern: { label: "منطق ونمط",     icon: "🔗", color: "var(--violet)", deep: "var(--violet-deep)"}
+  };
+
+  /* ============================================================
+     2) بنك الأسئلة
+  ============================================================ */
+  const CULTURE = [
+    { q:"إيه العاصمة الحقيقية لسويسرا؟", opts:["جنيف","زيورخ","برن","بازل"], correct:2 },
+    { q:"مين أول إنسان دار حول الأرض في الفضاء؟", opts:["نيل أرمسترونج","يوري غاغارين","باز ألدرن","جون غلين"], correct:1 },
+    { q:"العنصر الكيميائي اللي رمزه K؟", opts:["الكالسيوم","الكبريت","البوتاسيوم","الكربون"], correct:2 },
+    { q:'مين كاتب كتاب "الأيام"؟', opts:["نجيب محفوظ","توفيق الحكيم","طه حسين","يوسف إدريس"], correct:2 },
+    { q:"مين مكتشف البنسلين؟", opts:["لويس باستير","ألكسندر فليمنج","روبرت كوخ","إدوارد جينر"], correct:1 },
+    { q:"إيه الدولة اللي عدد جزرها حوالي 17 ألف جزيرة؟", opts:["الفلبين","اليابان","إندونيسيا","اليونان"], correct:2 },
+    { q:"إيه أقدم جامعة/مؤسسة تعليمية لسه موجودة وشغالة في العالم حسب موسوعات كتير؟", opts:["الأزهر","جامعة القرويين","الزيتونة","بيت الحكمة"], correct:1 },
+    { q:"الكوكب اللي دورته حول نفسه أبطأ من دورته حول الشمس؟", opts:["عطارد","الزهرة","المريخ","زحل"], correct:1 }
+  ];
+
+  const SPEED = [
+    { q:"كام لاعب داخل الملعب في فريق كرة القدم؟", opts:["9","10","11","12"], correct:2 },
+    { q:"8 × 7 = ؟", opts:["54","56","58","63"], correct:1 },
+    { q:"لو معاك 100 جنيه واشتريت حاجة بـ37 جنيه، الباقي كام؟", opts:["57","63","67","73"], correct:1 },
+    { q:"لو النهارده الاثنين، بعد 4 أيام هيبقى إيه النهار؟", opts:["الأربعاء","الخميس","الجمعة","السبت"], correct:2 },
+    { q:"كام دقيقة في ساعة ونص؟", opts:["60","75","90","120"], correct:2 },
+    { q:"لو الساعة 9:45 وعدّى عليها ربع ساعة، الساعة هتبقى كام؟", opts:["9:50","10:00","10:15","10:30"], correct:1 }
+  ];
+
+  const RIDDLE_MATH = [
+    { q:"أب عمره 4 أضعاف عمر ابنه. بعد 20 سنة، هيكون عمر الأب ضعف عمر الابن بالظبط. كام عمر الابن دلوقتي؟", opts:["8","10","12","15"], correct:1 },
+    { q:"لو ثمن 3 تفاحات و2 برتقالة = 24 جنيه، وثمن 2 تفاحة و3 برتقالة = 26 جنيه، كام سعر البرتقالة الواحدة؟", opts:["4 جنيه","5 جنيه","6 جنيه","8 جنيه"], correct:2 }
+  ];
+
+  const RIDDLE_LATERAL = [
+    { q:"راجل لقوه ميت في نص صحرا، جنبه شنطة مقفولة. لو الشنطة دي كانت مفتوحة كان عاش. إيه جوه الشنطة؟",
+      opts:["دوا","فلوس","براشوت","خريطة"], correct:2 },
+    { q:'راجل كان بيزقّ عربية لعبة لحد ما وقف قدام "فندق"، وأول ما وصل عرف إنه مفلس وخسر كل فلوسه. إزاي؟',
+      opts:["العربية كانت غالية","كان بيلعب مونوبولي","الفندق طلب إتاوة","بنزينه خلص"], correct:1 }
+  ];
+
+  const RIDDLE_PATTERN = [
+    { q:"الرقم اللي يكمّل السلسلة: 5 - 10 - 20 - 40 - ؟", opts:["50","60","80","100"], correct:2 },
+    { q:"الرقم اللي يكمّل السلسلة دي: 1 - 3 - 7 - 15 - 31 - ؟", opts:["47","55","63","62"], correct:2 }
+  ];
+
+  const BONUS_QUESTIONS = [
+    { q:"مين أول امرأة حصلت على جائزة نوبل؟", opts:["روزاليند فرانكلين","ماري كوري","فلورنس نايتنجيل","جين غودال"], correct:1 },
+    { q:"مين أول دولة كسبت كأس العالم في التاريخ؟", opts:["البرازيل","إيطاليا","أوروجواي","ألمانيا"], correct:2 },
+    { q:"إيه أقدم عجائب الدنيا السبع اللي لسه موجودة لحد دلوقتي؟", opts:["حدائق بابل المعلقة","منارة الإسكندرية","هرم خوفو","تمثال رودس"], correct:2 },
+    { q:"إيه العنصر الأكثر وفرة في الكون؟", opts:["الأكسجين","الهيدروجين","الكربون","الحديد"], correct:1 },
+    { q:"مين أسس مدينة بغداد؟", opts:["هارون الرشيد","أبو جعفر المنصور","المأمون","المعتصم"], correct:1 },
+    { q:"كام لاعب داخل الملعب في فريق الكرة الطائرة؟", opts:["5","6","7","11"], correct:1 },
+    { q:'مين رسم لوحة "ليلة النجوم" الشهيرة؟', opts:["مونيه","بيكاسو","فان جوخ","دالي"], correct:2 },
+    { q:"إيه الدولة اللي عاصمتها ريكيافيك؟", opts:["أيرلندا","آيسلندا","فنلندا","النرويج"], correct:1 },
+    { q:"حيوان بحري قلبه موجود في منطقة الرأس/الصدر، هو إيه؟", opts:["الأخطبوط","الجمبري","السلحفاة","القرش"], correct:1 },
+    { q:"مين أول خليفة في الدولة العباسية؟", opts:["أبو جعفر المنصور","هارون الرشيد","أبو العباس السفاح","المأمون"], correct:2 }
+  ];
+
+  // ترتيب ظهور الأسئلة الأساسية (تبادل بين الأنواع بدل ما يتجمعوا)
+  function buildMainQuestions(){
+    const c = CULTURE.map(x => ({...x, type:"culture"}));
+    const s = SPEED.map(x => ({...x, type:"speed"}));
+    const rm = RIDDLE_MATH.map(x => ({...x, type:"riddle_math"}));
+    const rl = RIDDLE_LATERAL.map(x => ({...x, type:"riddle_lateral"}));
+    const rp = RIDDLE_PATTERN.map(x => ({...x, type:"riddle_pattern"}));
+
+    return [
+      c[0], s[0], rm[0],
+      c[1], s[1], rl[0],
+      c[2], s[2], rp[0],
+      c[3], s[3], rm[1],
+      c[4], s[4], rl[1],
+      c[5], s[5], rp[1],
+      c[6], c[7]
+    ];
+  }
+
+  const MAIN_QUESTIONS = buildMainQuestions();
+  const BONUS_QUESTIONS_TYPED = BONUS_QUESTIONS.map(x => ({...x, type:"bonus"}));
+
+  /* ============================================================
+     3) Supabase client
+  ============================================================ */
+  let supabaseClient = null;
+  try{
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }catch(e){
+    console.error("Supabase init failed", e);
+  }
+
+  /* ============================================================
+     4) State
+  ============================================================ */
+  const state = {
+    name: "",
+    avatar: "😎",
+    score: 0,
+    correctCount: 0,
+    playerId: null,
+    round: "main",     // main | bonus
+    qIndex: 0,
+    bonusStartScore: 0,
+    timerHandle: null,
+    timerDeadline: 0,
+    timerTotal: 0,
+    answered: false
+  };
+
+  /* ============================================================
+     5) DOM helpers
+  ============================================================ */
+  const $ = id => document.getElementById(id);
+  function show(id){ $(id).classList.remove("hidden"); }
+  function hide(id){ $(id).classList.add("hidden"); }
+  function showOnly(id){
+    ["screen-entry","screen-already","screen-quiz","screen-result","screen-final","screen-leaderboard"]
+      .forEach(s => s === id ? show(s) : hide(s));
+  }
+
+  /* ============================================================
+     6) Entry screen
+  ============================================================ */
+  function renderAvatarGrid(){
+    const grid = $("avatar-grid");
+    grid.innerHTML = "";
+    CONFIG.avatars.forEach((av, i) => {
+      const el = document.createElement("div");
+      el.className = "avatar-opt" + (i === 0 ? " selected" : "");
+      el.textContent = av;
+      el.addEventListener("click", () => {
+        document.querySelectorAll(".avatar-opt").forEach(n => n.classList.remove("selected"));
+        el.classList.add("selected");
+        state.avatar = av;
+      });
+      grid.appendChild(el);
+    });
+    state.avatar = CONFIG.avatars[0];
+  }
+
+  function localKey(k){ return "quiz_challenge_" + k; }
+
+  function checkAlreadyPlayedLocally(){
+    const saved = localStorage.getItem(localKey("result"));
+    if(saved){
+      try{ return JSON.parse(saved); }catch(e){ return null; }
+    }
+    return null;
+  }
+
+  async function handleStart(){
+    const nameInput = $("name-input");
+    const name = nameInput.value.trim();
+    const errEl = $("name-error");
+    errEl.classList.remove("show");
+
+    if(name.length < 2){
+      errEl.textContent = "اكتب اسم لا يقل عن حرفين.";
+      errEl.classList.add("show");
+      return;
+    }
+
+    $("start-btn").disabled = true;
+    $("checking-note").classList.remove("hidden");
+
+    try{
+      if(supabaseClient){
+        const { data, error } = await supabaseClient
+          .from("players")
+          .select("id")
+          .eq("name", name)
+          .limit(1);
+
+        if(error) throw error;
+
+        if(data && data.length > 0){
+          errEl.textContent = "الاسم ده اتسجل قبل كده، جرب اسم تاني أو ضيف رقم.";
+          errEl.classList.add("show");
+          $("start-btn").disabled = false;
+          $("checking-note").classList.add("hidden");
+          return;
+        }
+      }
+    }catch(e){
+      console.error("Name check failed", e);
+      // نكمل حتى لو فشل التحقق، عشان تجربة اللعب ما تتعطلش بالكامل
+    }
+
+    state.name = name;
+    state.score = 0;
+    state.correctCount = 0;
+    state.round = "main";
+    state.qIndex = 0;
+
+    $("start-btn").disabled = false;
+    $("checking-note").classList.add("hidden");
+
+    startQuizRound();
+  }
+
+  /* ============================================================
+     7) Quiz engine (shared between main & bonus)
+  ============================================================ */
+  function currentQuestionSet(){
+    return state.round === "main" ? MAIN_QUESTIONS : BONUS_QUESTIONS_TYPED;
+  }
+
+  function startQuizRound(){
+    showOnly("screen-quiz");
+    $("quiz-player-av").textContent = state.avatar;
+    $("quiz-player-name").textContent = state.name;
+    updateScoreDisplay(false);
+    renderQuestion();
+  }
+
+  function updateScoreDisplay(bump){
+    const el = $("quiz-score");
+    el.textContent = state.score;
+    if(bump){
+      el.classList.remove("bump");
+      void el.offsetWidth; // restart animation
+      el.classList.add("bump");
+    }
+  }
+
+  function renderQuestion(){
+    state.answered = false;
+    const set = currentQuestionSet();
+    const q = set[state.qIndex];
+    const total = set.length;
+    const isMain = state.round === "main";
+
+    // progress
+    const pct = Math.round(((state.qIndex) / total) * 100);
+    $("progress-fill").style.width = pct + "%";
+    $("progress-caption-left").textContent = `سؤال ${state.qIndex + 1} من ${total}`;
+    $("progress-caption-right").textContent = isMain ? "الجولة الأساسية" : "🎲 Bonus Round";
+
+    // type badge
+    const badge = $("type-badge");
+    if(isMain){
+      const meta = TYPE_META[q.type];
+      badge.textContent = `${meta.icon} ${meta.label}`;
+      badge.style.color = meta.color;
+      badge.style.background = meta.deep;
+      badge.style.border = "1px solid " + meta.color;
+    } else {
+      badge.textContent = "🎲 مخاطرة — صح +20 / غلط -12";
+      badge.style.color = "var(--red)";
+      badge.style.background = "var(--red-deep)";
+      badge.style.border = "1px solid var(--red)";
+    }
+
+    // question + options
+    $("question-text").textContent = q.q;
+    const optsList = $("options-list");
+    optsList.innerHTML = "";
+    q.opts.forEach((optText, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.textContent = optText;
+      btn.addEventListener("click", () => onAnswer(idx));
+      optsList.appendChild(btn);
+    });
+    $("feedback-row").textContent = "";
+    $("feedback-row").className = "feedback-row";
+
+    // timer
+    const timerSeconds = isMain ? CONFIG.timers[q.type] : CONFIG.timers.bonus;
+    startTimer(timerSeconds);
+  }
+
+  function startTimer(seconds){
+    clearTimer();
+    state.timerTotal = seconds;
+    state.timerDeadline = Date.now() + seconds * 1000;
+
+    const ring = $("timer-ring");
+    const r = 32;
+    const circumference = 2 * Math.PI * r;
+    ring.style.strokeDasharray = circumference;
+    ring.style.strokeDashoffset = 0;
+    ring.style.stroke = "var(--teal)";
+
+    function tick(){
+      const remainMs = state.timerDeadline - Date.now();
+      const remain = Math.max(0, remainMs / 1000);
+      const ratio = remain / seconds;
+
+      $("timer-num").textContent = Math.ceil(remain);
+      ring.style.strokeDashoffset = circumference * (1 - ratio);
+      ring.style.stroke = ratio < 0.3 ? "var(--red)" : (ratio < 0.6 ? "var(--amber)" : "var(--teal)");
+
+      if(remainMs <= 0){
+        clearTimer();
+        if(!state.answered){ onAnswer(-1); } // timeout = ما جاوبش
+        return;
+      }
+      state.timerHandle = requestAnimationFrame(tick);
+    }
+    state.timerHandle = requestAnimationFrame(tick);
+  }
+
+  function clearTimer(){
+    if(state.timerHandle){
+      cancelAnimationFrame(state.timerHandle);
+      state.timerHandle = null;
+    }
+  }
+
+  function computeSpeedBonus(type, elapsedSeconds, totalSeconds){
+    const p = CONFIG.points[type];
+    const ratio = Math.min(1, Math.max(0, elapsedSeconds / totalSeconds));
+    const bonus = p.bonusMax - (p.bonusMax - p.bonusMin) * ratio;
+    return Math.round(bonus);
+  }
+
+  function onAnswer(selectedIdx){
+    if(state.answered) return;
+    state.answered = true;
+    clearTimer();
+
+    const set = currentQuestionSet();
+    const q = set[state.qIndex];
+    const isMain = state.round === "main";
+    const isCorrect = selectedIdx === q.correct;
+
+    const optionBtns = document.querySelectorAll("#options-list .option-btn");
+    optionBtns.forEach((btn, idx) => {
+      btn.classList.add("disabled-opt");
+      if(idx === q.correct) btn.classList.add("correct");
+      if(idx === selectedIdx && !isCorrect) btn.classList.add("wrong");
+    });
+
+    let pointsGained = 0;
+    if(isMain){
+      if(isCorrect){
+        const elapsed = state.timerTotal - Math.max(0, (state.timerDeadline - Date.now())/1000);
+        const speedBonus = computeSpeedBonus(q.type, elapsed, state.timerTotal);
+        pointsGained = CONFIG.points[q.type].base + speedBonus;
+        state.correctCount++;
+      }
+    } else {
+      pointsGained = isCorrect ? CONFIG.bonusRound.correctPoints : CONFIG.bonusRound.wrongPenalty;
+    }
+
+    state.score = Math.max(0, state.score + pointsGained);
+    updateScoreDisplay(true);
+
+    const fb = $("feedback-row");
+    if(isCorrect){
+      fb.textContent = `✅ إجابة صح! +${pointsGained} نقطة`;
+      fb.className = "feedback-row correct";
+    } else if(selectedIdx === -1){
+      fb.textContent = pointsGained < 0 ? `⏱️ خلص الوقت! ${pointsGained} نقطة` : "⏱️ خلص الوقت!";
+      fb.className = "feedback-row wrong";
+    } else {
+      fb.textContent = pointsGained < 0 ? `❌ إجابة غلط، ${pointsGained} نقطة` : "❌ إجابة غلط";
+      fb.className = "feedback-row wrong";
+    }
+
+    setTimeout(() => {
+      state.qIndex++;
+      const setNow = currentQuestionSet();
+      if(state.qIndex >= setNow.length){
+        finishRound();
+      } else {
+        renderQuestion();
+      }
+    }, 1300);
+  }
+
+  /* ============================================================
+     8) End of round handling
+  ============================================================ */
+  async function finishRound(){
+    if(state.round === "main"){
+      await savePlayerToSupabase();
+      showMainResult();
+    } else {
+      await updatePlayerAfterBonus();
+      showFinalResult();
+    }
+  }
+
+  async function savePlayerToSupabase(){
+    localStorage.setItem(localKey("result"), JSON.stringify({
+      name: state.name,
+      avatar: state.avatar,
+      score: state.score,
+      correct: state.correctCount
+    }));
+
+    if(!supabaseClient) return;
+    try{
+      const { data, error } = await supabaseClient
+        .from("players")
+        .insert({
+          name: state.name,
+          avatar: state.avatar,
+          score: state.score,
+          correct_answers: state.correctCount,
+          bonus_played: false
+        })
+        .select("id")
+        .single();
+
+      if(error) throw error;
+      state.playerId = data.id;
+      localStorage.setItem(localKey("playerId"), data.id);
+    }catch(e){
+      console.error("Insert failed", e);
+      // لو الاسم اتاخد بالظبط في نفس اللحظة من حد تاني، هيفشل هنا؛ اللاعب برضه شاف نتيجته محلياً
+    }
+  }
+
+  async function updatePlayerAfterBonus(){
+    const savedResult = JSON.parse(localStorage.getItem(localKey("result")) || "{}");
+    savedResult.score = state.score;
+    savedResult.correct = state.correctCount;
+    localStorage.setItem(localKey("result"), JSON.stringify(savedResult));
+
+    if(!supabaseClient || !state.playerId) return;
+    try{
+      await supabaseClient
+        .from("players")
+        .update({ score: state.score, bonus_played: true })
+        .eq("id", state.playerId);
+    }catch(e){
+      console.error("Bonus update failed", e);
+    }
+  }
+
+  async function showMainResult(){
+    showOnly("screen-result");
+    $("result-score").textContent = state.score;
+    $("result-correct").textContent = `${state.correctCount}/20`;
+    $("result-rank").textContent = "…";
+    const rank = await fetchMyRank();
+    $("result-rank").textContent = rank ? `#${rank}` : "-";
+  }
+
+  async function showFinalResult(){
+    showOnly("screen-final");
+    const delta = state.score - state.bonusStartScore;
+    $("final-title").innerHTML = delta >= 0
+      ? 'ممتاز! <span>كسبت من البونص</span> 🎉'
+      : 'خلصت الـ <span>Bonus Round</span>';
+    $("final-score").textContent = state.score;
+    $("final-bonus-delta").textContent = (delta >= 0 ? "+" : "") + delta;
+    $("final-rank").textContent = "…";
+    const rank = await fetchMyRank();
+    $("final-rank").textContent = rank ? `#${rank}` : "-";
+  }
+
+  async function fetchMyRank(){
+    if(!supabaseClient) return null;
+    try{
+      const { count, error } = await supabaseClient
+        .from("players")
+        .select("id", { count: "exact", head: true })
+        .gt("score", state.score);
+      if(error) throw error;
+      return (count || 0) + 1;
+    }catch(e){
+      console.error("Rank fetch failed", e);
+      return null;
+    }
+  }
+
+  /* ============================================================
+     9) Bonus round flow
+  ============================================================ */
+  function startBonusRound(){
+    state.round = "bonus";
+    state.qIndex = 0;
+    state.bonusStartScore = state.score;
+    startQuizRound();
+  }
+
+  /* ============================================================
+     10) Leaderboard
+  ============================================================ */
+  async function openLeaderboard(){
+    showOnly("screen-leaderboard");
+    $("lb-loading").classList.remove("hidden");
+    $("lb-content").classList.add("hidden");
+
+    let players = [];
+    try{
+      if(supabaseClient){
+        const { data, error } = await supabaseClient
+          .from("players")
+          .select("name, avatar, score")
+          .order("score", { ascending: false })
+          .limit(CONFIG.leaderboardLimit);
+        if(error) throw error;
+        players = data || [];
+      }
+    }catch(e){
+      console.error("Leaderboard fetch failed", e);
+    }
+
+    $("lb-loading").classList.add("hidden");
+    $("lb-content").classList.remove("hidden");
+    renderLeaderboard(players);
+  }
+
+  function renderLeaderboard(players){
+    const podium = $("lb-podium");
+    const list = $("lb-list");
+    const empty = $("lb-empty");
+    podium.innerHTML = "";
+    list.innerHTML = "";
+
+    if(!players.length){
+      empty.classList.remove("hidden");
+      return;
+    }
+    empty.classList.add("hidden");
+
+    const top3 = players.slice(0, 3);
+    const order = [1, 0, 2]; // نعرض التاني - الأول - التالت بصرياً
+    order.forEach(i => {
+      const p = top3[i];
+      const slot = document.createElement("div");
+      if(!p){ slot.className = "podium-slot"; podium.appendChild(slot); return; }
+      slot.className = "podium-slot p" + (i + 1);
+      slot.innerHTML = `
+        <div class="p-av">${escapeHtml(p.avatar || "🙂")}</div>
+        <div class="p-name">${escapeHtml(p.name)}</div>
+        <div class="p-score">${p.score}</div>
+        <div class="podium-bar">${i + 1}</div>
+      `;
+      podium.appendChild(slot);
+    });
+
+    const myName = state.name;
+    players.forEach((p, idx) => {
+      const row = document.createElement("div");
+      row.className = "lb-row" + (p.name === myName ? " me" : "");
+      row.innerHTML = `
+        <div class="lb-rank">${idx + 1}</div>
+        <div class="lb-av">${escapeHtml(p.avatar || "🙂")}</div>
+        <div class="lb-name">${escapeHtml(p.name)}</div>
+        <div class="lb-score">${p.score}</div>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  /* ============================================================
+     11) Boot
+  ============================================================ */
+  function checkIfAlreadyPlayedOnLoad(){
+    const saved = checkAlreadyPlayedLocally();
+    if(saved){
+      state.name = saved.name;
+      state.avatar = saved.avatar;
+      state.score = saved.score;
+      state.correctCount = saved.correct;
+      state.playerId = localStorage.getItem(localKey("playerId"));
+      showOnly("screen-already");
+      $("already-score").textContent = saved.score;
+      $("already-correct").textContent = `${saved.correct}/20`;
+      return true;
+    }
+    return false;
+  }
+
+  function init(){
+    renderAvatarGrid();
+
+    $("start-btn").addEventListener("click", handleStart);
+    $("name-input").addEventListener("keydown", e => { if(e.key === "Enter") handleStart(); });
+
+    $("skip-bonus-btn").addEventListener("click", () => { showFinalFromSkip(); });
+    $("start-bonus-btn").addEventListener("click", startBonusRound);
+
+    $("already-lb-btn").addEventListener("click", openLeaderboard);
+    $("final-lb-btn").addEventListener("click", openLeaderboard);
+    $("lb-refresh-btn").addEventListener("click", openLeaderboard);
+
+    if(!checkIfAlreadyPlayedOnLoad()){
+      showOnly("screen-entry");
+    }
+  }
+
+  async function showFinalFromSkip(){
+    state.bonusStartScore = state.score;
+    showOnly("screen-final");
+    $("final-title").innerHTML = 'تمام! <span>دي نتيجتك</span> ✅';
+    $("final-score").textContent = state.score;
+    $("final-bonus-delta").textContent = "0";
+    $("final-rank").textContent = "…";
+    const rank = await fetchMyRank();
+    $("final-rank").textContent = rank ? `#${rank}` : "-";
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>
