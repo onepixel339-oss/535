@@ -53,6 +53,16 @@
     justify-content:center;
     padding: 24px 14px 60px;
     overflow-x:hidden;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+
+  #name-input{
+    -webkit-user-select:text;
+    -moz-user-select:text;
+    user-select:text;
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -575,6 +585,73 @@
     padding: 20px 0;
   }
 
+  .explain-list{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+  .explain-item{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px;
+  }
+  .explain-item.correct{ border-color: rgba(180,255,57,0.35); }
+  .explain-item.wrong{ border-color: rgba(255,59,92,0.35); }
+  .explain-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .explain-num{
+    font-family:var(--font-num);
+    font-weight:700;
+    color:var(--text-dim);
+    font-size:12px;
+  }
+  .explain-status{
+    font-size:11.5px;
+    font-weight:800;
+    padding:3px 9px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .explain-status.correct{ color:var(--lime); background: rgba(180,255,57,0.12); }
+  .explain-status.wrong{ color:var(--red); background: var(--red-deep); }
+  .explain-q{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:14.5px;
+    line-height:1.5;
+    margin-bottom:10px;
+  }
+  .explain-opts{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+  .explain-opt{
+    font-size:13px;
+    padding:8px 10px;
+    border-radius:8px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+  }
+  .explain-opt.is-correct{
+    border-color: var(--lime);
+    color:var(--lime);
+    font-weight:700;
+  }
+  .explain-opt.is-picked-wrong{
+    border-color: var(--red);
+    color:var(--red);
+    font-weight:700;
+  }
+  .explain-why{
+    font-size:13px;
+    line-height:1.6;
+    color:var(--text-dim);
+    background:var(--surface);
+    border-radius:8px;
+    padding:10px 12px;
+    border-inline-start:3px solid var(--teal);
+  }
+
   .spinner{
     width:22px; height:22px;
     border-radius:50%;
@@ -627,7 +704,10 @@
       <div class="stat-box"><div class="n" id="already-score">-</div><div class="l">نقاطك</div></div>
       <div class="stat-box"><div class="n" id="already-correct">-</div><div class="l">إجابات صح</div></div>
     </div>
-    <button id="already-lb-btn" class="btn btn-primary mt-lg">شوف الترتيب 🏆</button>
+    <div class="btn-row">
+      <button id="already-explain-btn" class="btn btn-secondary">شوف التفسيرات 📖</button>
+      <button id="already-lb-btn" class="btn btn-primary">شوف الترتيب 🏆</button>
+    </div>
   </section>
 
   <!-- ============ SCREEN: QUIZ (shared for main + bonus) ============ -->
@@ -706,7 +786,10 @@
       <div class="stat-box"><div class="n" id="final-bonus-delta">-</div><div class="l">من الـ Bonus</div></div>
       <div class="stat-box"><div class="n" id="final-rank">-</div><div class="l">ترتيبك</div></div>
     </div>
-    <button id="final-lb-btn" class="btn btn-primary mt-lg">شوف الترتيب كامل 🏆</button>
+    <div class="btn-row">
+      <button id="final-explain-btn" class="btn btn-secondary">شوف التفسيرات 📖</button>
+      <button id="final-lb-btn" class="btn btn-primary">شوف الترتيب كامل 🏆</button>
+    </div>
   </section>
 
   <!-- ============ SCREEN: LEADERBOARD ============ -->
@@ -721,6 +804,16 @@
       <div class="lb-list" id="lb-list"></div>
       <div id="lb-empty" class="empty-note hidden">محدش لعب لسه… يلا كن أول واحد!</div>
     </div>
+  </section>
+
+  <!-- ============ SCREEN: EXPLANATIONS ============ -->
+  <section id="screen-explanations" class="card hidden">
+    <div class="lb-header">
+      <div class="lb-title">📖 التفسيرات</div>
+      <button id="explain-back-btn" class="refresh-btn">رجوع ↩</button>
+    </div>
+    <div id="explain-empty" class="empty-note hidden">لسه معندكش أسئلة اتجاوبت.</div>
+    <div id="explain-list" class="explain-list"></div>
   </section>
 
   <div class="footer-note">اتعمل بحب لفعاليتكم 💛</div>
@@ -738,19 +831,15 @@
 
   const CONFIG = {
     timers: {           // بالثواني
-      culture: 12,
-      speed: 7,
-      riddle_math: 25,
-      riddle_lateral: 20,
-      riddle_pattern: 15,
-      bonus: 15
+      culture: 20,
+      riddle_math: 30,
+      riddle_lateral: 60,
+      bonus: 60
     },
     points: {
       culture:        { base: 10, bonusMax: 5,  bonusMin: 1 },
-      speed:          { base: 5,  bonusMax: 5,  bonusMin: 1 },
       riddle_math:    { base: 15, bonusMax: 10, bonusMin: 2 },
-      riddle_lateral: { base: 15, bonusMax: 10, bonusMin: 2 },
-      riddle_pattern: { base: 15, bonusMax: 10, bonusMin: 2 }
+      riddle_lateral: { base: 15, bonusMax: 10, bonusMin: 2 }
     },
     bonusRound: {
       correctPoints: 20,
@@ -762,82 +851,113 @@
 
   const TYPE_META = {
     culture:        { label: "ثقافة عامة",    icon: "📚", color: "var(--teal)",   deep: "var(--teal-deep)"  },
-    speed:          { label: "تحدي سريع",     icon: "⚡", color: "var(--red)",    deep: "var(--red-deep)"   },
     riddle_math:    { label: "رياضة ومعادلة", icon: "🔢", color: "var(--violet)", deep: "var(--violet-deep)"},
-    riddle_lateral: { label: "لغز تفكير",     icon: "🧩", color: "var(--violet)", deep: "var(--violet-deep)"},
-    riddle_pattern: { label: "منطق ونمط",     icon: "🔗", color: "var(--violet)", deep: "var(--violet-deep)"}
+    riddle_lateral: { label: "لغز تفكير",     icon: "🧩", color: "var(--violet)", deep: "var(--violet-deep)"}
   };
 
   /* ============================================================
      2) بنك الأسئلة
   ============================================================ */
   const CULTURE = [
-    { q:"إيه العاصمة الحقيقية لسويسرا؟", opts:["جنيف","زيورخ","برن","بازل"], correct:2 },
-    { q:"مين أول إنسان دار حول الأرض في الفضاء؟", opts:["نيل أرمسترونج","يوري غاغارين","باز ألدرن","جون غلين"], correct:1 },
-    { q:"العنصر الكيميائي اللي رمزه K؟", opts:["الكالسيوم","الكبريت","البوتاسيوم","الكربون"], correct:2 },
-    { q:'مين كاتب كتاب "الأيام"؟', opts:["نجيب محفوظ","توفيق الحكيم","طه حسين","يوسف إدريس"], correct:2 },
-    { q:"مين مكتشف البنسلين؟", opts:["لويس باستير","ألكسندر فليمنج","روبرت كوخ","إدوارد جينر"], correct:1 },
-    { q:"إيه الدولة اللي عدد جزرها حوالي 17 ألف جزيرة؟", opts:["الفلبين","اليابان","إندونيسيا","اليونان"], correct:2 },
-    { q:"إيه أقدم جامعة/مؤسسة تعليمية لسه موجودة وشغالة في العالم حسب موسوعات كتير؟", opts:["الأزهر","جامعة القرويين","الزيتونة","بيت الحكمة"], correct:1 },
-    { q:"الكوكب اللي دورته حول نفسه أبطأ من دورته حول الشمس؟", opts:["عطارد","الزهرة","المريخ","زحل"], correct:1 }
-  ];
-
-  const SPEED = [
-    { q:"كام لاعب داخل الملعب في فريق كرة القدم؟", opts:["9","10","11","12"], correct:2 },
-    { q:"8 × 7 = ؟", opts:["54","56","58","63"], correct:1 },
-    { q:"لو معاك 100 جنيه واشتريت حاجة بـ37 جنيه، الباقي كام؟", opts:["57","63","67","73"], correct:1 },
-    { q:"لو النهارده الاثنين، بعد 4 أيام هيبقى إيه النهار؟", opts:["الأربعاء","الخميس","الجمعة","السبت"], correct:2 },
-    { q:"كام دقيقة في ساعة ونص؟", opts:["60","75","90","120"], correct:2 },
-    { q:"لو الساعة 9:45 وعدّى عليها ربع ساعة، الساعة هتبقى كام؟", opts:["9:50","10:00","10:15","10:30"], correct:1 }
+    { q:"مجموع زوايا المثلث الداخلية يساوي؟", opts:["90 درجة","180 درجة","270 درجة","360 درجة"], correct:1,
+      explain:"قاعدة هندسية ثابتة: مجموع الزوايا الداخلية لأي مثلث = 180°." },
+    { q:'مين مؤلف مسرحية "روميو وجولييت"؟', opts:["تشارلز ديكنز","وليم شكسبير","فيكتور هوجو","نجيب محفوظ"], correct:1,
+      explain:"من أشهر مسرحيات الكاتب الإنجليزي وليم شكسبير." },
+    { q:"إيه أكبر جزيرة في العالم؟", opts:["مدغشقر","جرينلاند","بورنيو","سومطرة"], correct:1,
+      explain:"جرينلاند هي أكبر جزيرة في العالم (بين المحيط الأطلسي والقطبي)، وأستراليا بتتصنف قارة مش جزيرة." },
+    { q:'مين اللي رسم لوحة "العشاء الأخير"؟', opts:["مايكل أنجلو","رافائيل","ليوناردو دافنشي","بيكاسو"], correct:2,
+      explain:"رسمها ليوناردو دافنشي في أواخر القرن الخامس عشر." },
+    { q:'إيه الدولة اللي بتتلقب بـ"بلاد الشمس المشرقة"؟', opts:["الصين","كوريا الجنوبية","اليابان","تايلاند"], correct:2,
+      explain:"بسبب موقع اليابان في أقصى شرق آسيا، حيث تبدو الشمس كأنها بتشرق منها الأول." },
+    { q:"إيه أسرع حيوان مائي؟", opts:["القرش الأبيض","الدولفين","سمكة الزعنفة الشراعية","الحوت الأزرق"], correct:2,
+      explain:"سمكة الزعنفة الشراعية بتوصل سرعتها لحوالي 110 كم/ساعة." },
+    { q:"إيه أصغر قارة في العالم من حيث المساحة؟", opts:["أوروبا","أستراليا","أمريكا الجنوبية","القارة القطبية الجنوبية"], correct:1,
+      explain:"أستراليا هي أصغر القارات مساحةً." },
+    { q:"إيه أكبر دولة عربية من حيث المساحة؟", opts:["السعودية","مصر","الجزائر","السودان"], correct:2,
+      explain:"مساحة الجزائر حوالي 2.38 مليون كم²." }
   ];
 
   const RIDDLE_MATH = [
-    { q:"أب عمره 4 أضعاف عمر ابنه. بعد 20 سنة، هيكون عمر الأب ضعف عمر الابن بالظبط. كام عمر الابن دلوقتي؟", opts:["8","10","12","15"], correct:1 },
-    { q:"لو ثمن 3 تفاحات و2 برتقالة = 24 جنيه، وثمن 2 تفاحة و3 برتقالة = 26 جنيه، كام سعر البرتقالة الواحدة؟", opts:["4 جنيه","5 جنيه","6 جنيه","8 جنيه"], correct:2 }
+    { q:"حل المعادلة: 4س + 9 = 33", opts:["4","5","6","7"], correct:2,
+      explain:"نطرح 9 من الطرفين: 4س = 24، وبعدين نقسم على 4: س = 6." },
+    { q:"ما قيمة 25% من 240؟", opts:["50","55","60","70"], correct:2,
+      explain:"25% = ربع، وربع 240 = 240 ÷ 4 = 60." },
+    { q:"إذا كان أ + ب = 12 و أ - ب = 4، فما قيمة أ؟", opts:["6","7","8","9"], correct:2,
+      explain:"بجمع المعادلتين: (أ+ب)+(أ-ب) = 12+4 → 2أ = 16 → أ = 8." },
+    { q:"أكمل المتتالية: 3، 7، 13، 21، 31، ...؟", opts:["39","41","43","45"], correct:2,
+      explain:"الفروق بين الأعداد: 4، 6، 8، 10 (بتزيد بمقدار 2)، فالفرق التالي 12، يعني 31 + 12 = 43." },
+    { q:"أكمل المتتالية: 1، 1، 2، 3، 5، 8، ...؟", opts:["10","11","12","13"], correct:3,
+      explain:"دي متتالية فيبوناتشي: كل عدد هو مجموع العددين اللي قبله (5+8=13)." }
   ];
 
   const RIDDLE_LATERAL = [
-    { q:"راجل لقوه ميت في نص صحرا، جنبه شنطة مقفولة. لو الشنطة دي كانت مفتوحة كان عاش. إيه جوه الشنطة؟",
-      opts:["دوا","فلوس","براشوت","خريطة"], correct:2 },
-    { q:'راجل كان بيزقّ عربية لعبة لحد ما وقف قدام "فندق"، وأول ما وصل عرف إنه مفلس وخسر كل فلوسه. إزاي؟',
-      opts:["العربية كانت غالية","كان بيلعب مونوبولي","الفندق طلب إتاوة","بنزينه خلص"], correct:1 }
-  ];
-
-  const RIDDLE_PATTERN = [
-    { q:"الرقم اللي يكمّل السلسلة: 5 - 10 - 20 - 40 - ؟", opts:["50","60","80","100"], correct:2 },
-    { q:"الرقم اللي يكمّل السلسلة دي: 1 - 3 - 7 - 15 - 31 - ؟", opts:["47","55","63","62"], correct:2 }
+    { q:'راجل بيبص لصورة ويقول: "ليس لي إخوة ولا أخوات، لكن والد هذا الشخص هو ابن والدي". مين في الصورة؟',
+      opts:["هو نفسه","ابنه","والده","عمه"], correct:1,
+      explain:'"ابن والدي" هو الراجل نفسه، فوالد الشخص اللي في الصورة هو الراجل، يبقى الشخص ده ابنه.' },
+    { q:"سجين اتعرض عليه يختار غرفة: الأولى نار مشتعلة، الثانية قتلة محترفين، الثالثة أسود ملهاش أكل من 3 سنين. أي غرفة هي الأأمن؟",
+      opts:["الأولى","الثانية","الثالثة","كلها متساوية"], correct:2,
+      explain:"الأسود ملهاش أكل من 3 سنين يبقى ماتت من الجوع، فمفيش خطر منها." },
+    { q:"راجلين وولدين راحوا يصطادوا، اصطادوا 3 سمكات، وكل واحد أخد سمكة كاملة. إزاي؟",
+      opts:["أحدهم ماكلش","كانوا 3 أجيال: جد وأب وابن","السمكات كانت كبيرة","مستحيل"], correct:1,
+      explain:"الجد أب للأب، والأب أب للابن، فهما راجلين وولدين لكنهم في الحقيقة 3 أشخاص بس." },
+    { q:"لو 5 آلات محتاجة 5 دقايق تصنع 5 قطع، فكام دقيقة هتحتاج 100 آلة عشان تصنع 100 قطعة؟",
+      opts:["5 دقايق","20 دقيقة","50 دقيقة","100 دقيقة"], correct:0,
+      explain:"كل آلة بتصنع قطعة واحدة في 5 دقايق، فلو اشتغلت 100 آلة مع بعض في نفس الوقت هتطلع 100 قطعة في نفس الـ5 دقايق." },
+    { q:'قدامك 3 علب: واحدة "تفاح"، وواحدة "برتقال"، وواحدة "خليط". كل الملصقات غلط. تقدر تسحب حبة واحدة بس من علبة واحدة. من أنهي علبة تسحب عشان تعرف محتوى الثلاث علب؟',
+      opts:["علبة التفاح","علبة البرتقال","علبة الخليط","أي علبة"], correct:2,
+      explain:'بما إن ملصقها غلط، هي فعليًا فيها نوع واحد بس. بعد ما تسحب حبة وتعرف نوعها، تقدر تستنتج باقي العلب لأن كل الملصقات غلط.' },
+    { q:"معاك دلوين: واحد يسع 5 لتر، والتاني يسع 3 لتر. إزاي تقيس 4 لتر بالظبط؟",
+      opts:["املا دلو 5 واسكب نصه في دلو 3","املا دلو 3 واسكبه في دلو 5، واملا دلو 3 تاني واسكب في دلو 5 لحد ما يمتلي، فيفضل 1 في دلو 3. فضّي دلو 5 واسكب فيه الـ1، وبعدين املا دلو 3 تاني واسكبه في دلو 5","املا دلو 5 واسكب في دلو 3 لحد ما يمتلي، واعتبر الباقي هو 4","املا الدلوين مع بعض واقسم المجموع على 2"], correct:1,
+      explain:"املا 3 واسكبه في 5 (يبقى في 5: 3 لتر). املا 3 تاني واسكب في 5 لحد ما يمتلي (يفضل في 3: 1 لتر). فضّي دلو 5، اسكب فيه الـ1 لتر، وبعدين املا 3 واسكبه، فيبقى المجموع 1+3 = 4 لتر." },
+    { q:"معاك 8 كور متطابقة، واحدة منهم أتقل شوية. إيه أقل عدد مرات وزن تقدر بيها تحدد الكورة الأتقل بميزان ذو كفتين؟",
+      opts:["مرتين بس","3 مرات","4 مرات","مستحيل تحددها"], correct:0,
+      explain:"زن 3 كور ضد 3 كور. لو اتزنوا: الكورة الأتقل في الكورتين الباقيين، فزنهم لتحدد الأتقل. لو مختلفوش: خد الـ3 الأتقل، زن واحدة ضد واحدة؛ لو اتزنوا فالأتقل هي الثالثة، ولو لأ فهي الأتقل." }
   ];
 
   const BONUS_QUESTIONS = [
-    { q:"مين أول امرأة حصلت على جائزة نوبل؟", opts:["روزاليند فرانكلين","ماري كوري","فلورنس نايتنجيل","جين غودال"], correct:1 },
-    { q:"مين أول دولة كسبت كأس العالم في التاريخ؟", opts:["البرازيل","إيطاليا","أوروجواي","ألمانيا"], correct:2 },
-    { q:"إيه أقدم عجائب الدنيا السبع اللي لسه موجودة لحد دلوقتي؟", opts:["حدائق بابل المعلقة","منارة الإسكندرية","هرم خوفو","تمثال رودس"], correct:2 },
-    { q:"إيه العنصر الأكثر وفرة في الكون؟", opts:["الأكسجين","الهيدروجين","الكربون","الحديد"], correct:1 },
-    { q:"مين أسس مدينة بغداد؟", opts:["هارون الرشيد","أبو جعفر المنصور","المأمون","المعتصم"], correct:1 },
-    { q:"كام لاعب داخل الملعب في فريق الكرة الطائرة؟", opts:["5","6","7","11"], correct:1 },
-    { q:'مين رسم لوحة "ليلة النجوم" الشهيرة؟', opts:["مونيه","بيكاسو","فان جوخ","دالي"], correct:2 },
-    { q:"إيه الدولة اللي عاصمتها ريكيافيك؟", opts:["أيرلندا","آيسلندا","فنلندا","النرويج"], correct:1 },
-    { q:"حيوان بحري قلبه موجود في منطقة الرأس/الصدر، هو إيه؟", opts:["الأخطبوط","الجمبري","السلحفاة","القرش"], correct:1 },
-    { q:"مين أول خليفة في الدولة العباسية؟", opts:["أبو جعفر المنصور","هارون الرشيد","أبو العباس السفاح","المأمون"], correct:2 }
+    { q:"لو قسمت 30 على النص وبعدين ضفت 10، الناتج كام؟", opts:["25","50","70","80"], correct:2,
+      explain:"القسمة على النص معناها القسمة على 0.5، يعني 30 ÷ 0.5 = 60، وبعدين +10 = 70." },
+    { q:"مضرب وكورة ثمنهم مع بعض 1.10 دولار، والمضرب أغلى من الكورة بدولار واحد بالظبط. ثمن الكورة كام؟", opts:["5 سنتات","10 سنتات","15 سنت","20 سنت"], correct:0,
+      explain:"نفرض ثمن الكورة س، والمضرب س+1. س + (س+1) = 1.10 → 2س = 0.10 → س = 0.05 دولار (5 سنتات)." },
+    { q:"إيه الكوكب الوحيد في المجموعة الشمسية اللي بيدور حول نفسه عكس اتجاه باقي الكواكب؟", opts:["الأرض","الزهرة","المريخ","المشتري"], correct:1,
+      explain:"كوكب الزهرة له دوران تراجعي (عكس عقارب الساعة) على عكس باقي الكواكب." },
+    { q:"إيه أصغر عدد أولي أكبر من 100؟", opts:["101","103","107","109"], correct:0,
+      explain:"101 مش بيتقسم إلا على نفسه و1، ومفيش أعداد أولية بين 100 و101." },
+    { q:"إزاي تجمع 8 أرقام 8 عشان الناتج يكون 1000؟", opts:["888 + 88 + 8 + 8 + 8","888 + 88 + 8 + 8 + 8 + 8","888 + 88 + 8 + 8 + 8 + 8 + 8","88 + 88 + 88 + 8 + 8"], correct:0,
+      explain:"888 + 88 + 8 + 8 + 8 = 1000، وده استخدام 8 أرقام 8 بالظبط (3+2+1+1+1)." },
+    { q:"لو بعد بكرة هيبقى يوم الخميس، فإيه اليوم اللي كان قبلها بـ3 أيام؟", opts:["الجمعة","السبت","الأحد","الاثنين"], correct:1,
+      explain:"لو بعد بكرة الخميس، يبقى النهارده الثلاثاء. قبل الثلاثاء بـ3 أيام هو السبت." },
+    { q:"زهرة زنبق في بحيرة بتتضاعف مساحتها كل يوم، وبعد 48 يوم بتغطي البحيرة كلها. في أي يوم غطت نصها بس؟", opts:["46","47","24","48"], correct:1,
+      explain:"بما إنها بتتضاعف كل يوم، يبقى اليوم اللي قبل التغطية الكاملة (47) كانت فيه نص المساحة بس." },
+    { q:"كام مرة بيتقابل فيها عقربا الساعة (الساعات والدقايق) خلال 24 ساعة؟", opts:["24 مرة","22 مرة","20 مرة","12 مرة"], correct:1,
+      explain:"العقربين بيتقابلوا 11 مرة كل 12 ساعة، فيبقى في 24 ساعة = 22 مرة." },
+    { q:"راجل بنى بيت كل جدرانه الأربعة بتواجه الجنوب. إيه لون الدب اللي بيظهر قدامه؟", opts:["بني","أسود","أبيض","لا يوجد دب"], correct:2,
+      explain:"ده ممكن يحصل بس لو البيت في القطب الشمالي بالظبط، والدب اللي هناك هو الدب القطبي الأبيض." },
+    { q:"3 أرقام متتالية حاصل ضربهم 990، إيه هما؟", opts:["8، 9، 10","9، 10، 11","10، 11، 12","11، 12، 13"], correct:1,
+      explain:"9 × 10 × 11 = 990." }
   ];
 
   // ترتيب ظهور الأسئلة الأساسية (تبادل بين الأنواع بدل ما يتجمعوا)
+  // بيوزّع تلقائي بالدور على كل فئة لحد ما تخلص أسئلتها، مهما كان عددها
   function buildMainQuestions(){
-    const c = CULTURE.map(x => ({...x, type:"culture"}));
-    const s = SPEED.map(x => ({...x, type:"speed"}));
-    const rm = RIDDLE_MATH.map(x => ({...x, type:"riddle_math"}));
-    const rl = RIDDLE_LATERAL.map(x => ({...x, type:"riddle_lateral"}));
-    const rp = RIDDLE_PATTERN.map(x => ({...x, type:"riddle_pattern"}));
-
-    return [
-      c[0], s[0], rm[0],
-      c[1], s[1], rl[0],
-      c[2], s[2], rp[0],
-      c[3], s[3], rm[1],
-      c[4], s[4], rl[1],
-      c[5], s[5], rp[1],
-      c[6], c[7]
+    const groups = [
+      CULTURE.map(x => ({...x, type:"culture"})),
+      RIDDLE_MATH.map(x => ({...x, type:"riddle_math"})),
+      RIDDLE_LATERAL.map(x => ({...x, type:"riddle_lateral"}))
     ];
+
+    const result = [];
+    let stillLeft = true;
+    while(stillLeft){
+      stillLeft = false;
+      for(const g of groups){
+        if(g.length){
+          result.push(g.shift());
+          stillLeft = true;
+        }
+      }
+    }
+    return result;
   }
 
   const MAIN_QUESTIONS = buildMainQuestions();
@@ -868,7 +988,10 @@
     timerHandle: null,
     timerDeadline: 0,
     timerTotal: 0,
-    answered: false
+    answered: false,
+    questionActive: false,   // true من وقت ظهور السؤال لحد ما يتجاوب، لأغراض كشف الغش
+    answerLog: [],           // سجل كل سؤال اتجاوب عليه (لعرضه في شاشة التفسيرات)
+    cameFromScreen: "screen-final"
   };
 
   /* ============================================================
@@ -878,7 +1001,7 @@
   function show(id){ $(id).classList.remove("hidden"); }
   function hide(id){ $(id).classList.add("hidden"); }
   function showOnly(id){
-    ["screen-entry","screen-already","screen-quiz","screen-result","screen-final","screen-leaderboard"]
+    ["screen-entry","screen-already","screen-quiz","screen-result","screen-final","screen-leaderboard","screen-explanations"]
       .forEach(s => s === id ? show(s) : hide(s));
   }
 
@@ -989,6 +1112,7 @@
 
   function renderQuestion(){
     state.answered = false;
+    state.questionActive = true;
     const set = currentQuestionSet();
     const q = set[state.qIndex];
     const total = set.length;
@@ -1072,22 +1196,33 @@
     }
   }
 
+  // نظام بونص الوقت بقى مقسّم 3 تلتات بدل التدرّج المستمر:
+  // جاوبت في التلت الأول من الوقت -> أقصى بونص
+  // جاوبت في التلت التاني         -> بونص متوسط
+  // جاوبت في التلت التالت         -> أقل بونص
   function computeSpeedBonus(type, elapsedSeconds, totalSeconds){
     const p = CONFIG.points[type];
     const ratio = Math.min(1, Math.max(0, elapsedSeconds / totalSeconds));
-    const bonus = p.bonusMax - (p.bonusMax - p.bonusMin) * ratio;
-    return Math.round(bonus);
+
+    if(ratio <= 1/3){
+      return p.bonusMax;
+    } else if(ratio <= 2/3){
+      return Math.round((p.bonusMax + p.bonusMin) / 2);
+    } else {
+      return p.bonusMin;
+    }
   }
 
-  function onAnswer(selectedIdx){
+  function onAnswer(selectedIdx, isCheatFlag){
     if(state.answered) return;
     state.answered = true;
+    state.questionActive = false;
     clearTimer();
 
     const set = currentQuestionSet();
     const q = set[state.qIndex];
     const isMain = state.round === "main";
-    const isCorrect = selectedIdx === q.correct;
+    const isCorrect = !isCheatFlag && selectedIdx === q.correct;
 
     const optionBtns = document.querySelectorAll("#options-list .option-btn");
     optionBtns.forEach((btn, idx) => {
@@ -1111,8 +1246,21 @@
     state.score = Math.max(0, state.score + pointsGained);
     updateScoreDisplay(true);
 
+    state.answerLog.push({
+      q: q.q,
+      opts: q.opts,
+      correct: q.correct,
+      selectedIdx: isCheatFlag ? -2 : selectedIdx,
+      explain: q.explain || "",
+      type: q.type,
+      round: state.round
+    });
+
     const fb = $("feedback-row");
-    if(isCorrect){
+    if(isCheatFlag){
+      fb.textContent = "🚫 اتسجل خروج من الصفحة أثناء السؤال — اتحسب غلط";
+      fb.className = "feedback-row wrong";
+    } else if(isCorrect){
       fb.textContent = `✅ إجابة صح! +${pointsGained} نقطة`;
       fb.className = "feedback-row correct";
     } else if(selectedIdx === -1){
@@ -1154,6 +1302,7 @@
       score: state.score,
       correct: state.correctCount
     }));
+    localStorage.setItem(localKey("answerLog"), JSON.stringify(state.answerLog));
 
     if(!supabaseClient) return;
     try{
@@ -1183,6 +1332,7 @@
     savedResult.score = state.score;
     savedResult.correct = state.correctCount;
     localStorage.setItem(localKey("result"), JSON.stringify(savedResult));
+    localStorage.setItem(localKey("answerLog"), JSON.stringify(state.answerLog));
 
     if(!supabaseClient || !state.playerId) return;
     try{
@@ -1320,8 +1470,107 @@
   }
 
   /* ============================================================
-     11) Boot
+     9.5) شاشة التفسيرات
   ============================================================ */
+  function openExplanations(fromScreenId){
+    state.cameFromScreen = fromScreenId || "screen-final";
+    renderExplanations();
+    showOnly("screen-explanations");
+  }
+
+  function renderExplanations(){
+    const list = $("explain-list");
+    const empty = $("explain-empty");
+    list.innerHTML = "";
+
+    const log = state.answerLog || [];
+    if(!log.length){
+      empty.classList.remove("hidden");
+      return;
+    }
+    empty.classList.add("hidden");
+
+    log.forEach((entry, i) => {
+      const wasCheat = entry.selectedIdx === -2;
+      const isCorrect = !wasCheat && entry.selectedIdx === entry.correct;
+
+      const item = document.createElement("div");
+      item.className = "explain-item " + (isCorrect ? "correct" : "wrong");
+
+      const head = document.createElement("div");
+      head.className = "explain-head";
+      const num = document.createElement("span");
+      num.className = "explain-num";
+      num.textContent = `سؤال ${i + 1}`;
+      const status = document.createElement("span");
+      status.className = "explain-status " + (isCorrect ? "correct" : "wrong");
+      status.textContent = wasCheat ? "🚫 غش" : (isCorrect ? "✅ صح" : (entry.selectedIdx === -1 ? "⏱️ خلص الوقت" : "❌ غلط"));
+      head.appendChild(num);
+      head.appendChild(status);
+
+      const qEl = document.createElement("div");
+      qEl.className = "explain-q";
+      qEl.textContent = entry.q;
+
+      const optsEl = document.createElement("div");
+      optsEl.className = "explain-opts";
+      entry.opts.forEach((optText, idx) => {
+        const o = document.createElement("div");
+        o.className = "explain-opt";
+        if(idx === entry.correct) o.classList.add("is-correct");
+        if(idx === entry.selectedIdx && idx !== entry.correct) o.classList.add("is-picked-wrong");
+        o.textContent = optText;
+        optsEl.appendChild(o);
+      });
+
+      item.appendChild(head);
+      item.appendChild(qEl);
+      item.appendChild(optsEl);
+
+      if(entry.explain){
+        const why = document.createElement("div");
+        why.className = "explain-why";
+        why.textContent = entry.explain;
+        item.appendChild(why);
+      }
+
+      list.appendChild(item);
+    });
+  }
+
+
+  /* ============================================================
+     10.5) منع الغش
+     - منع الكليك اليمين وتحديد النص ونسخ محتوى الصفحة
+     - منع اختصارات فتح أدوات المطور (F12, Ctrl+Shift+I/J/C, Ctrl+U)
+     - لو اللاعب سرّح بره التاب/التطبيق وهو في نص سؤال (يدوّر على الإجابة
+       في مكان تاني)، بمجرد ما يرجع بيتحسبله السؤال غلط أوتوماتيك
+     ملحوظة: دي إجراءات ردع لتقليل الغش السهل، مش حماية 100%،
+     لأي حد فاهم في المطوّر تولز هيقدر يتحايل عليها لأن الكود شغال
+     كله على المتصفح. الحماية الأقوى الحقيقية بتحتاج تحقق من سيرفر.
+  ============================================================ */
+  function setupAntiCheat(){
+    document.addEventListener("contextmenu", e => e.preventDefault());
+
+    document.addEventListener("keydown", e => {
+      const k = e.key ? e.key.toUpperCase() : "";
+      if(k === "F12") { e.preventDefault(); return; }
+      if(e.ctrlKey && e.shiftKey && (k === "I" || k === "J" || k === "C")) { e.preventDefault(); return; }
+      if(e.ctrlKey && k === "U") { e.preventDefault(); return; }
+    });
+
+    function handlePossibleCheat(){
+      if(state.questionActive && !state.answered && state.round){
+        onAnswer(-1, true);
+      }
+    }
+    document.addEventListener("visibilitychange", () => {
+      if(document.hidden) handlePossibleCheat();
+    });
+    window.addEventListener("blur", handlePossibleCheat);
+  }
+
+
   function checkIfAlreadyPlayedOnLoad(){
     const saved = checkAlreadyPlayedLocally();
     if(saved){
@@ -1330,6 +1579,11 @@
       state.score = saved.score;
       state.correctCount = saved.correct;
       state.playerId = localStorage.getItem(localKey("playerId"));
+      try{
+        state.answerLog = JSON.parse(localStorage.getItem(localKey("answerLog")) || "[]");
+      }catch(e){
+        state.answerLog = [];
+      }
       showOnly("screen-already");
       $("already-score").textContent = saved.score;
       $("already-correct").textContent = `${saved.correct}/20`;
@@ -1340,6 +1594,7 @@
 
   function init(){
     renderAvatarGrid();
+    setupAntiCheat();
 
     $("start-btn").addEventListener("click", handleStart);
     $("name-input").addEventListener("keydown", e => { if(e.key === "Enter") handleStart(); });
@@ -1350,6 +1605,10 @@
     $("already-lb-btn").addEventListener("click", openLeaderboard);
     $("final-lb-btn").addEventListener("click", openLeaderboard);
     $("lb-refresh-btn").addEventListener("click", openLeaderboard);
+
+    $("already-explain-btn").addEventListener("click", () => openExplanations("screen-already"));
+    $("final-explain-btn").addEventListener("click", () => openExplanations("screen-final"));
+    $("explain-back-btn").addEventListener("click", () => showOnly(state.cameFromScreen));
 
     if(!checkIfAlreadyPlayedOnLoad()){
       showOnly("screen-entry");
