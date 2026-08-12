@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800;900&family=Almarai:wght@400;700;800&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+  /* === جميع الأنماط كما هي (لم تتغير) === */
   :root{
     --bg:#0B0E1A;
     --bg-glow-1: rgba(255,182,39,0.16);
@@ -846,7 +847,8 @@
       wrongPenalty: -12
     },
     leaderboardLimit: 20,
-    avatars: ["😎","🦁","🐯","🚀","🔥","🎯","🐺","🦊","👾","🎮","🧠","⚡","🐸","🦄","🌟"]
+    avatars: ["😎","🦁","🐯","🚀","🔥","🎯","🐺","🦊","👾","🎮","🧠","⚡","🐸","🦄","🌟"],
+    appVersion: "2.0"   // <-- أضفنا إصدار التطبيق، غيّره عند كل تحديث للأسئلة
   };
 
   const TYPE_META = {
@@ -1027,62 +1029,47 @@
 
   function localKey(k){ return "quiz_challenge_" + k; }
 
-  function checkAlreadyPlayedLocally(){
+  /* ============================================================
+     6.5) checkAlreadyPlayedOnLoad (معدلة للتحقق من الإصدار)
+  ============================================================ */
+  function checkIfAlreadyPlayedOnLoad(){
     const saved = localStorage.getItem(localKey("result"));
     if(saved){
-      try{ return JSON.parse(saved); }catch(e){ return null; }
-    }
-    return null;
-  }
-
-  async function handleStart(){
-    const nameInput = $("name-input");
-    const name = nameInput.value.trim();
-    const errEl = $("name-error");
-    errEl.classList.remove("show");
-
-    if(name.length < 2){
-      errEl.textContent = "اكتب اسم لا يقل عن حرفين.";
-      errEl.classList.add("show");
-      return;
-    }
-
-    $("start-btn").disabled = true;
-    $("checking-note").classList.remove("hidden");
-
-    try{
-      if(supabaseClient){
-        const { data, error } = await supabaseClient
-          .from("players")
-          .select("id")
-          .eq("name", name)
-          .limit(1);
-
-        if(error) throw error;
-
-        if(data && data.length > 0){
-          errEl.textContent = "الاسم ده اتسجل قبل كده، جرب اسم تاني أو ضيف رقم.";
-          errEl.classList.add("show");
-          $("start-btn").disabled = false;
-          $("checking-note").classList.add("hidden");
-          return;
+      try{
+        const data = JSON.parse(saved);
+        // تحقق من الإصدار
+        if(data.version && data.version === CONFIG.appVersion){
+          // نفس الإصدار → سبق اللعب بهذا الإصدار
+          state.name = data.name;
+          state.avatar = data.avatar;
+          state.score = data.score;
+          state.correctCount = data.correct;
+          state.playerId = localStorage.getItem(localKey("playerId"));
+          try{
+            state.answerLog = JSON.parse(localStorage.getItem(localKey("answerLog")) || "[]");
+          }catch(e){
+            state.answerLog = [];
+          }
+          showOnly("screen-already");
+          $("already-score").textContent = data.score;
+          $("already-correct").textContent = `${data.correct}/20`;
+          return true;
+        } else {
+          // إصدار مختلف → امسح البيانات المحلية واعتبره لم يلعب
+          localStorage.removeItem(localKey("result"));
+          localStorage.removeItem(localKey("answerLog"));
+          localStorage.removeItem(localKey("playerId"));
+          return false;
         }
+      }catch(e){
+        // بيانات تالفة → امسح واعتبر لم يلعب
+        localStorage.removeItem(localKey("result"));
+        localStorage.removeItem(localKey("answerLog"));
+        localStorage.removeItem(localKey("playerId"));
+        return false;
       }
-    }catch(e){
-      console.error("Name check failed", e);
-      // نكمل حتى لو فشل التحقق، عشان تجربة اللعب ما تتعطلش بالكامل
     }
-
-    state.name = name;
-    state.score = 0;
-    state.correctCount = 0;
-    state.round = "main";
-    state.qIndex = 0;
-
-    $("start-btn").disabled = false;
-    $("checking-note").classList.add("hidden");
-
-    startQuizRound();
+    return false;
   }
 
   /* ============================================================
@@ -1283,11 +1270,11 @@
   }
 
   /* ============================================================
-     8) End of round handling
+     8) End of round handling (معدل لإدارة الإصدار)
   ============================================================ */
   async function finishRound(){
     if(state.round === "main"){
-      await savePlayerToSupabase();
+      await savePlayerToSupabase();  // سيتم التحديث أو الإدراج
       showMainResult();
     } else {
       await updatePlayerAfterBonus();
@@ -1295,42 +1282,82 @@
     }
   }
 
+  /* ============================================================
+     8.1) savePlayerToSupabase (معدل: تحديث أو إدراج مع version)
+  ============================================================ */
   async function savePlayerToSupabase(){
-    localStorage.setItem(localKey("result"), JSON.stringify({
+    // حفظ محلي مع الإصدار
+    const resultData = {
       name: state.name,
       avatar: state.avatar,
       score: state.score,
-      correct: state.correctCount
-    }));
+      correct: state.correctCount,
+      version: CONFIG.appVersion
+    };
+    localStorage.setItem(localKey("result"), JSON.stringify(resultData));
     localStorage.setItem(localKey("answerLog"), JSON.stringify(state.answerLog));
 
     if(!supabaseClient) return;
     try{
-      const { data, error } = await supabaseClient
+      // 1. ابحث عن لاعب بنفس الاسم
+      const { data: existing, error: findError } = await supabaseClient
         .from("players")
-        .insert({
-          name: state.name,
-          avatar: state.avatar,
-          score: state.score,
-          correct_answers: state.correctCount,
-          bonus_played: false
-        })
         .select("id")
-        .single();
+        .eq("name", state.name)
+        .limit(1);
 
-      if(error) throw error;
-      state.playerId = data.id;
-      localStorage.setItem(localKey("playerId"), data.id);
+      if(findError) throw findError;
+
+      let playerId = null;
+      if(existing && existing.length > 0){
+        // لاعب موجود → تحديث
+        const id = existing[0].id;
+        const { error: updateError } = await supabaseClient
+          .from("players")
+          .update({
+            avatar: state.avatar,
+            score: state.score,
+            correct_answers: state.correctCount,
+            version: CONFIG.appVersion,
+            bonus_played: false   // نعيد تعيين البونوس مع كل تحديث إصدار
+          })
+          .eq("id", id);
+        if(updateError) throw updateError;
+        playerId = id;
+      } else {
+        // لاعب غير موجود → إدراج
+        const { data: inserted, error: insertError } = await supabaseClient
+          .from("players")
+          .insert({
+            name: state.name,
+            avatar: state.avatar,
+            score: state.score,
+            correct_answers: state.correctCount,
+            version: CONFIG.appVersion,
+            bonus_played: false
+          })
+          .select("id")
+          .single();
+        if(insertError) throw insertError;
+        playerId = inserted.id;
+      }
+
+      state.playerId = playerId;
+      localStorage.setItem(localKey("playerId"), playerId);
     }catch(e){
-      console.error("Insert failed", e);
-      // لو الاسم اتاخد بالظبط في نفس اللحظة من حد تاني، هيفشل هنا؛ اللاعب برضه شاف نتيجته محلياً
+      console.error("Save/update failed", e);
+      // في حالة فشل التحديث/الإدراج، يظل اللاعب شاهداً نتيجته محلياً
     }
   }
 
+  /* ============================================================
+     8.2) updatePlayerAfterBonus (معدل لتضمين version)
+  ============================================================ */
   async function updatePlayerAfterBonus(){
     const savedResult = JSON.parse(localStorage.getItem(localKey("result")) || "{}");
     savedResult.score = state.score;
     savedResult.correct = state.correctCount;
+    savedResult.version = CONFIG.appVersion;   // تأكيد الإصدار
     localStorage.setItem(localKey("result"), JSON.stringify(savedResult));
     localStorage.setItem(localKey("answerLog"), JSON.stringify(state.answerLog));
 
@@ -1338,13 +1365,20 @@
     try{
       await supabaseClient
         .from("players")
-        .update({ score: state.score, bonus_played: true })
+        .update({ 
+          score: state.score, 
+          bonus_played: true,
+          version: CONFIG.appVersion 
+        })
         .eq("id", state.playerId);
     }catch(e){
       console.error("Bonus update failed", e);
     }
   }
 
+  /* ============================================================
+     8.3) showMainResult & showFinalResult (بدون تغيير)
+  ============================================================ */
   async function showMainResult(){
     showOnly("screen-result");
     $("result-score").textContent = state.score;
@@ -1540,14 +1574,7 @@
 
 
   /* ============================================================
-     10.5) منع الغش
-     - منع الكليك اليمين وتحديد النص ونسخ محتوى الصفحة
-     - منع اختصارات فتح أدوات المطور (F12, Ctrl+Shift+I/J/C, Ctrl+U)
-     - لو اللاعب سرّح بره التاب/التطبيق وهو في نص سؤال (يدوّر على الإجابة
-       في مكان تاني)، بمجرد ما يرجع بيتحسبله السؤال غلط أوتوماتيك
-     ملحوظة: دي إجراءات ردع لتقليل الغش السهل، مش حماية 100%،
-     لأي حد فاهم في المطوّر تولز هيقدر يتحايل عليها لأن الكود شغال
-     كله على المتصفح. الحماية الأقوى الحقيقية بتحتاج تحقق من سيرفر.
+     10.5) منع الغش (بدون تغيير)
   ============================================================ */
   function setupAntiCheat(){
     document.addEventListener("contextmenu", e => e.preventDefault());
@@ -1570,28 +1597,76 @@
     window.addEventListener("blur", handlePossibleCheat);
   }
 
+  /* ============================================================
+     11) دالة handleStart (بدون تغيير)
+  ============================================================ */
+  async function handleStart(){
+    const nameInput = $("name-input");
+    const name = nameInput.value.trim();
+    const errEl = $("name-error");
+    errEl.classList.remove("show");
 
-  function checkIfAlreadyPlayedOnLoad(){
-    const saved = checkAlreadyPlayedLocally();
-    if(saved){
-      state.name = saved.name;
-      state.avatar = saved.avatar;
-      state.score = saved.score;
-      state.correctCount = saved.correct;
-      state.playerId = localStorage.getItem(localKey("playerId"));
-      try{
-        state.answerLog = JSON.parse(localStorage.getItem(localKey("answerLog")) || "[]");
-      }catch(e){
-        state.answerLog = [];
-      }
-      showOnly("screen-already");
-      $("already-score").textContent = saved.score;
-      $("already-correct").textContent = `${saved.correct}/20`;
-      return true;
+    if(name.length < 2){
+      errEl.textContent = "اكتب اسم لا يقل عن حرفين.";
+      errEl.classList.add("show");
+      return;
     }
-    return false;
+
+    $("start-btn").disabled = true;
+    $("checking-note").classList.remove("hidden");
+
+    try{
+      if(supabaseClient){
+        const { data, error } = await supabaseClient
+          .from("players")
+          .select("id")
+          .eq("name", name)
+          .limit(1);
+
+        if(error) throw error;
+
+        if(data && data.length > 0){
+          errEl.textContent = "الاسم ده اتسجل قبل كده، جرب اسم تاني أو ضيف رقم.";
+          errEl.classList.add("show");
+          $("start-btn").disabled = false;
+          $("checking-note").classList.add("hidden");
+          return;
+        }
+      }
+    }catch(e){
+      console.error("Name check failed", e);
+      // نكمل حتى لو فشل التحقق، عشان تجربة اللعب ما تتعطلش بالكامل
+    }
+
+    state.name = name;
+    state.score = 0;
+    state.correctCount = 0;
+    state.round = "main";
+    state.qIndex = 0;
+
+    $("start-btn").disabled = false;
+    $("checking-note").classList.add("hidden");
+
+    startQuizRound();
   }
 
+  /* ============================================================
+     12) showFinalFromSkip (بدون تغيير)
+  ============================================================ */
+  async function showFinalFromSkip(){
+    state.bonusStartScore = state.score;
+    showOnly("screen-final");
+    $("final-title").innerHTML = 'تمام! <span>دي نتيجتك</span> ✅';
+    $("final-score").textContent = state.score;
+    $("final-bonus-delta").textContent = "0";
+    $("final-rank").textContent = "…";
+    const rank = await fetchMyRank();
+    $("final-rank").textContent = rank ? `#${rank}` : "-";
+  }
+
+  /* ============================================================
+     13) التهيئة
+  ============================================================ */
   function init(){
     renderAvatarGrid();
     setupAntiCheat();
@@ -1613,17 +1688,6 @@
     if(!checkIfAlreadyPlayedOnLoad()){
       showOnly("screen-entry");
     }
-  }
-
-  async function showFinalFromSkip(){
-    state.bonusStartScore = state.score;
-    showOnly("screen-final");
-    $("final-title").innerHTML = 'تمام! <span>دي نتيجتك</span> ✅';
-    $("final-score").textContent = state.score;
-    $("final-bonus-delta").textContent = "0";
-    $("final-rank").textContent = "…";
-    const rank = await fetchMyRank();
-    $("final-rank").textContent = rank ? `#${rank}` : "-";
   }
 
   document.addEventListener("DOMContentLoaded", init);
