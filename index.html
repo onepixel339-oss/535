@@ -731,7 +731,7 @@
     </div>
 
     <div style="margin-top:20px; text-align:center;">
-      <span class="type-badge" id="type-badge"></span>
+      <span class="type-badge hidden" id="type-badge"></span>
     </div>
 
     <div class="timer-wrap">
@@ -825,145 +825,270 @@
   "use strict";
 
   /* ============================================================
-     1) CONFIG — كل الأرقام قابلة للتعديل من هنا
+     1) CONFIG
   ============================================================ */
   const SUPABASE_URL = "https://jkyfpsuamctwufwwoizt.supabase.co";
   const SUPABASE_KEY = "sb_publishable_RP021jjyWosA9YXYjYV_Ag_d9JRniPc";
 
   const CONFIG = {
-    timers: {           // بالثواني
-      culture: 20,
-      riddle_math: 30,
-      riddle_lateral: 60,
-      bonus: 60
-    },
-    points: {
-      culture:        { base: 10, bonusMax: 5,  bonusMin: 1 },
-      riddle_math:    { base: 15, bonusMax: 10, bonusMin: 2 },
-      riddle_lateral: { base: 15, bonusMax: 10, bonusMin: 2 }
-    },
-    bonusRound: {
-      correctPoints: 20,
-      wrongPenalty: -12
-    },
+    points: { base: 10, bonusMax: 5, bonusMin: 1 },
+    bonusRound: { correctPoints: 20, wrongPenalty: -12 },
     leaderboardLimit: 20,
     avatars: ["😎","🦁","🐯","🚀","🔥","🎯","🐺","🦊","👾","🎮","🧠","⚡","🐸","🦄","🌟"],
-    appVersion: "2.0"   // <-- أضفنا إصدار التطبيق، غيّره عند كل تحديث للأسئلة
-  };
-
-  const TYPE_META = {
-    culture:        { label: "ثقافة عامة",    icon: "📚", color: "var(--teal)",   deep: "var(--teal-deep)"  },
-    riddle_math:    { label: "رياضة ومعادلة", icon: "🔢", color: "var(--violet)", deep: "var(--violet-deep)"},
-    riddle_lateral: { label: "لغز تفكير",     icon: "🧩", color: "var(--violet)", deep: "var(--violet-deep)"}
+    appVersion: "4.0"   // <-- تم الترقية لإعادة تعيين البيانات تلقائياً
   };
 
   /* ============================================================
-     2) بنك الأسئلة
+     2) بنك الأسئلة (مع التفسيرات الكاملة)
   ============================================================ */
-  const CULTURE = [
-    { q:"مجموع زوايا المثلث الداخلية يساوي؟", opts:["90 درجة","180 درجة","270 درجة","360 درجة"], correct:1,
-      explain:"قاعدة هندسية ثابتة: مجموع الزوايا الداخلية لأي مثلث = 180°." },
-    { q:'مين مؤلف مسرحية "روميو وجولييت"؟', opts:["تشارلز ديكنز","وليم شكسبير","فيكتور هوجو","نجيب محفوظ"], correct:1,
-      explain:"من أشهر مسرحيات الكاتب الإنجليزي وليم شكسبير." },
-    { q:"إيه أكبر جزيرة في العالم؟", opts:["مدغشقر","جرينلاند","بورنيو","سومطرة"], correct:1,
-      explain:"جرينلاند هي أكبر جزيرة في العالم (بين المحيط الأطلسي والقطبي)، وأستراليا بتتصنف قارة مش جزيرة." },
-    { q:'مين اللي رسم لوحة "العشاء الأخير"؟', opts:["مايكل أنجلو","رافائيل","ليوناردو دافنشي","بيكاسو"], correct:2,
-      explain:"رسمها ليوناردو دافنشي في أواخر القرن الخامس عشر." },
-    { q:'إيه الدولة اللي بتتلقب بـ"بلاد الشمس المشرقة"؟', opts:["الصين","كوريا الجنوبية","اليابان","تايلاند"], correct:2,
-      explain:"بسبب موقع اليابان في أقصى شرق آسيا، حيث تبدو الشمس كأنها بتشرق منها الأول." },
-    { q:"إيه أسرع حيوان مائي؟", opts:["القرش الأبيض","الدولفين","سمكة الزعنفة الشراعية","الحوت الأزرق"], correct:2,
-      explain:"سمكة الزعنفة الشراعية بتوصل سرعتها لحوالي 110 كم/ساعة." },
-    { q:"إيه أصغر قارة في العالم من حيث المساحة؟", opts:["أوروبا","أستراليا","أمريكا الجنوبية","القارة القطبية الجنوبية"], correct:1,
-      explain:"أستراليا هي أصغر القارات مساحةً." },
-    { q:"إيه أكبر دولة عربية من حيث المساحة؟", opts:["السعودية","مصر","الجزائر","السودان"], correct:2,
-      explain:"مساحة الجزائر حوالي 2.38 مليون كم²." }
-  ];
-
-  const RIDDLE_MATH = [
-    { q:"حل المعادلة: 4س + 9 = 33", opts:["4","5","6","7"], correct:2,
-      explain:"نطرح 9 من الطرفين: 4س = 24، وبعدين نقسم على 4: س = 6." },
-    { q:"ما قيمة 25% من 240؟", opts:["50","55","60","70"], correct:2,
-      explain:"25% = ربع، وربع 240 = 240 ÷ 4 = 60." },
-    { q:"إذا كان أ + ب = 12 و أ - ب = 4، فما قيمة أ؟", opts:["6","7","8","9"], correct:2,
-      explain:"بجمع المعادلتين: (أ+ب)+(أ-ب) = 12+4 → 2أ = 16 → أ = 8." },
-    { q:"أكمل المتتالية: 3، 7، 13، 21، 31، ...؟", opts:["39","41","43","45"], correct:2,
-      explain:"الفروق بين الأعداد: 4، 6، 8، 10 (بتزيد بمقدار 2)، فالفرق التالي 12، يعني 31 + 12 = 43." },
-    { q:"أكمل المتتالية: 1، 1، 2، 3، 5، 8، ...؟", opts:["10","11","12","13"], correct:3,
-      explain:"دي متتالية فيبوناتشي: كل عدد هو مجموع العددين اللي قبله (5+8=13)." }
-  ];
-
-  const RIDDLE_LATERAL = [
-    { q:'راجل بيبص لصورة ويقول: "ليس لي إخوة ولا أخوات، لكن والد هذا الشخص هو ابن والدي". مين في الصورة؟',
-      opts:["هو نفسه","ابنه","والده","عمه"], correct:1,
-      explain:'"ابن والدي" هو الراجل نفسه، فوالد الشخص اللي في الصورة هو الراجل، يبقى الشخص ده ابنه.' },
-    { q:"سجين اتعرض عليه يختار غرفة: الأولى نار مشتعلة، الثانية قتلة محترفين، الثالثة أسود ملهاش أكل من 3 سنين. أي غرفة هي الأأمن؟",
-      opts:["الأولى","الثانية","الثالثة","كلها متساوية"], correct:2,
-      explain:"الأسود ملهاش أكل من 3 سنين يبقى ماتت من الجوع، فمفيش خطر منها." },
-    { q:"راجلين وولدين راحوا يصطادوا، اصطادوا 3 سمكات، وكل واحد أخد سمكة كاملة. إزاي؟",
-      opts:["أحدهم ماكلش","كانوا 3 أجيال: جد وأب وابن","السمكات كانت كبيرة","مستحيل"], correct:1,
-      explain:"الجد أب للأب، والأب أب للابن، فهما راجلين وولدين لكنهم في الحقيقة 3 أشخاص بس." },
-    { q:"لو 5 آلات محتاجة 5 دقايق تصنع 5 قطع، فكام دقيقة هتحتاج 100 آلة عشان تصنع 100 قطعة؟",
-      opts:["5 دقايق","20 دقيقة","50 دقيقة","100 دقيقة"], correct:0,
-      explain:"كل آلة بتصنع قطعة واحدة في 5 دقايق، فلو اشتغلت 100 آلة مع بعض في نفس الوقت هتطلع 100 قطعة في نفس الـ5 دقايق." },
-    { q:'قدامك 3 علب: واحدة "تفاح"، وواحدة "برتقال"، وواحدة "خليط". كل الملصقات غلط. تقدر تسحب حبة واحدة بس من علبة واحدة. من أنهي علبة تسحب عشان تعرف محتوى الثلاث علب؟',
-      opts:["علبة التفاح","علبة البرتقال","علبة الخليط","أي علبة"], correct:2,
-      explain:'بما إن ملصقها غلط، هي فعليًا فيها نوع واحد بس. بعد ما تسحب حبة وتعرف نوعها، تقدر تستنتج باقي العلب لأن كل الملصقات غلط.' },
-    { q:"معاك دلوين: واحد يسع 5 لتر، والتاني يسع 3 لتر. إزاي تقيس 4 لتر بالظبط؟",
-      opts:["املا دلو 5 واسكب نصه في دلو 3","املا دلو 3 واسكبه في دلو 5، واملا دلو 3 تاني واسكب في دلو 5 لحد ما يمتلي، فيفضل 1 في دلو 3. فضّي دلو 5 واسكب فيه الـ1، وبعدين املا دلو 3 تاني واسكبه في دلو 5","املا دلو 5 واسكب في دلو 3 لحد ما يمتلي، واعتبر الباقي هو 4","املا الدلوين مع بعض واقسم المجموع على 2"], correct:1,
-      explain:"املا 3 واسكبه في 5 (يبقى في 5: 3 لتر). املا 3 تاني واسكب في 5 لحد ما يمتلي (يفضل في 3: 1 لتر). فضّي دلو 5، اسكب فيه الـ1 لتر، وبعدين املا 3 واسكبه، فيبقى المجموع 1+3 = 4 لتر." },
-    { q:"معاك 8 كور متطابقة، واحدة منهم أتقل شوية. إيه أقل عدد مرات وزن تقدر بيها تحدد الكورة الأتقل بميزان ذو كفتين؟",
-      opts:["مرتين بس","3 مرات","4 مرات","مستحيل تحددها"], correct:0,
-      explain:"زن 3 كور ضد 3 كور. لو اتزنوا: الكورة الأتقل في الكورتين الباقيين، فزنهم لتحدد الأتقل. لو مختلفوش: خد الـ3 الأتقل، زن واحدة ضد واحدة؛ لو اتزنوا فالأتقل هي الثالثة، ولو لأ فهي الأتقل." }
+  const REGULAR_QUESTIONS = [
+    {
+      "id": 1,
+      "question": "رجل في غرفة مظلمة تمامًا، ومعه عود ثقاب واحد فقط. في الغرفة شمعة ومصباح زيت وموقد خشب. ماذا يشعل أولًا؟",
+      "options": ["الشمعة", "المصباح الزيتي", "الموقد الخشبي", "عود الثقاب"],
+      "correctIndex": 3,
+      "timeLimit": 30,
+      "explain": "لازم يشعل عود الثقاب الأول لأنه الوسيلة الوحيدة لإشعال أي شيء تاني."
+    },
+    {
+      "id": 2,
+      "question": "ما هي عاصمة الأردن؟",
+      "options": ["عمان", "دمشق", "بغداد", "بيروت"],
+      "correctIndex": 0,
+      "timeLimit": 30,
+      "explain": "عمّان هي عاصمة المملكة الأردنية الهاشمية."
+    },
+    {
+      "id": 3,
+      "question": "كم عدد أيام السنة الميلادية غير الكبيسة؟",
+      "options": ["364", "365", "366", "367"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "السنة الميلادية العادية 365 يومًا، والكبيسة 366 يومًا."
+    },
+    {
+      "id": 4,
+      "question": "ما هي أصغر دولة في العالم من حيث عدد السكان؟",
+      "options": ["موناكو", "الفاتيكان", "سان مارينو", "ليختنشتاين"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "الفاتيكان هي أصغر دولة من حيث المساحة وعدد السكان."
+    },
+    {
+      "id": 5,
+      "question": "أي طائر يضع أكبر بيضة في العالم؟",
+      "options": ["النعامة", "الدجاجة", "البطة", "الإوزة"],
+      "correctIndex": 0,
+      "timeLimit": 30,
+      "explain": "النعامة تضع أكبر بيضة بين الطيور الحية، وقد يتجاوز وزن البيضة 1.5 كجم."
+    },
+    {
+      "id": 6,
+      "question": "حل المعادلة: 3س + 6 = 21",
+      "options": ["3", "5", "7", "9"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "نطرح 6 من الطرفين: 3س = 15، نقسم على 3: س = 5."
+    },
+    {
+      "id": 7,
+      "question": "أكمل المتتالية: 2، 5، 10، 17، 26، ...؟",
+      "options": ["35", "37", "39", "41"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "الفروق: 3، 5، 7، 9، 11، إذن 26 + 11 = 37."
+    },
+    {
+      "id": 8,
+      "question": "عمر أحمد ضعف عمر محمد، وبعد 5 سنوات يصبح مجموعهما 40. كم عمر أحمد الآن؟",
+      "options": ["10", "15", "20", "25"],
+      "correctIndex": 2,
+      "timeLimit": 30,
+      "explain": "نفرض عمر محمد = س، أحمد = 2س. بعد 5 سنوات: (س+5)+(2س+5)=40 => 3س=30 => س=10، فأحمد=20."
+    },
+    {
+      "id": 9,
+      "question": "كم مرة يمكنك طرح العدد 5 من العدد 25؟",
+      "options": ["5 مرات", "4 مرات", "مرة واحدة", "25 مرة"],
+      "correctIndex": 2,
+      "timeLimit": 30,
+      "explain": "مرة واحدة فقط، لأن بعد طرح 5 من 25 تبقى 20، والطرح التالي سيكون من 20 مش 25."
+    },
+    {
+      "id": 10,
+      "question": "إذا كان اليوم هو الاثنين، فما اليوم بعد 100 يوم؟",
+      "options": ["الأحد", "الاثنين", "الأربعاء", "الجمعة"],
+      "correctIndex": 2,
+      "timeLimit": 30,
+      "explain": "100 ÷ 7 = 14 أسبوعًا والباقي 2 يوم، الاثنين + يومان = الأربعاء."
+    },
+    {
+      "id": 11,
+      "question": "عائلة لديها 6 أولاد، ولكل ولد أخت واحدة. كم عدد أفراد العائلة (الأب والأم والأبناء)؟",
+      "options": ["7", "8", "9", "12"],
+      "correctIndex": 2,
+      "timeLimit": 30,
+      "explain": "الأولاد الستة يشتركون في أخت واحدة فقط. الأبناء = 6+1=7، + الأب والأم = 9 أفراد."
+    },
+    {
+      "id": 12,
+      "question": "ما هي عاصمة النمسا؟",
+      "options": ["فيينا", "جنيف", "زيورخ", "براغ"],
+      "correctIndex": 0,
+      "timeLimit": 30,
+      "explain": "عاصمة النمسا هي فيينا."
+    },
+    {
+      "id": 13,
+      "question": "ما هي العملة الرسمية للسويد؟",
+      "options": ["اليورو", "الكرونة", "الجنيه", "الفرنك"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "عملة السويد هي الكرونة السويدية."
+    },
+    {
+      "id": 14,
+      "question": "ما هي أكبر بحيرة في العالم من حيث المساحة؟",
+      "options": ["بحيرة فيكتوريا", "بحر قزوين", "بحيرة سوبيريور", "بحيرة بايكال"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "بحر قزوين رغم اسمه \"بحر\" إلا أنه يُصنف كأكبر بحيرة مغلقة في العالم."
+    },
+    {
+      "id": 15,
+      "question": "كم عدد أضلاع الشكل الثماني؟",
+      "options": ["6", "7", "8", "9"],
+      "correctIndex": 2,
+      "timeLimit": 30,
+      "explain": "الشكل الثماني له 8 أضلاع."
+    },
+    {
+      "id": 16,
+      "question": "ما هو الشيء الذي يظهر مرة واحدة في القرن، ومرتين في الدقيقة، ولا يظهر في الساعة؟",
+      "options": ["حرف الألف", "حرف القاف", "حرف اللام", "حرف النون"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "حرف القاف. كلمة \"قرن\" فيها قاف واحدة، \"دقيقة\" فيها قافان، \"ساعة\" لا تحتوي على قاف."
+    },
+    {
+      "id": 17,
+      "question": "أكمل المتتالية: 1، 2، 6، 24، 120، ...؟",
+      "options": ["600", "720", "840", "1000"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "هذه مضروبات الأعداد (عاملي): 1! = 1، 2! = 2، 3! = 6، 4! = 24، 5! = 120، التالي: 6! = 720."
+    },
+    {
+      "id": 18,
+      "question": "ما هي الكلمة التي إذا نطقتها بطل معناها؟",
+      "options": ["الكلام", "الصمت", "الصوت", "السر"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "الصمت. لأنك لو نطقت كلمة \"الصمت\" فقد كسرت الصمت، فبطل معناها."
+    },
+    {
+      "id": 19,
+      "question": "رجل يمشي تحت المطر الغزير بدون مظلة أو قبعة، ومع ذلك لم يبتل شعره. كيف؟",
+      "options": ["كان شعره قصيرًا جدًا", "كان أصلع", "كان المطر خفيفًا", "كان يركض بسرعة"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "كان أصلع، ليس لديه شعر من الأساس ليبتل."
+    },
+    {
+      "id": 20,
+      "question": "أكمل المتتالية: 3، 5، 9، 17، 33، ...؟",
+      "options": ["49", "65", "97", "129"],
+      "correctIndex": 1,
+      "timeLimit": 30,
+      "explain": "الفروق: 2، 4، 8، 16، 32، إذن 33 + 32 = 65."
+    }
   ];
 
   const BONUS_QUESTIONS = [
-    { q:"لو قسمت 30 على النص وبعدين ضفت 10، الناتج كام؟", opts:["25","50","70","80"], correct:2,
-      explain:"القسمة على النص معناها القسمة على 0.5، يعني 30 ÷ 0.5 = 60، وبعدين +10 = 70." },
-    { q:"مضرب وكورة ثمنهم مع بعض 1.10 دولار، والمضرب أغلى من الكورة بدولار واحد بالظبط. ثمن الكورة كام؟", opts:["5 سنتات","10 سنتات","15 سنت","20 سنت"], correct:0,
-      explain:"نفرض ثمن الكورة س، والمضرب س+1. س + (س+1) = 1.10 → 2س = 0.10 → س = 0.05 دولار (5 سنتات)." },
-    { q:"إيه الكوكب الوحيد في المجموعة الشمسية اللي بيدور حول نفسه عكس اتجاه باقي الكواكب؟", opts:["الأرض","الزهرة","المريخ","المشتري"], correct:1,
-      explain:"كوكب الزهرة له دوران تراجعي (عكس عقارب الساعة) على عكس باقي الكواكب." },
-    { q:"إيه أصغر عدد أولي أكبر من 100؟", opts:["101","103","107","109"], correct:0,
-      explain:"101 مش بيتقسم إلا على نفسه و1، ومفيش أعداد أولية بين 100 و101." },
-    { q:"إزاي تجمع 8 أرقام 8 عشان الناتج يكون 1000؟", opts:["888 + 88 + 8 + 8 + 8","888 + 88 + 8 + 8 + 8 + 8","888 + 88 + 8 + 8 + 8 + 8 + 8","88 + 88 + 88 + 8 + 8"], correct:0,
-      explain:"888 + 88 + 8 + 8 + 8 = 1000، وده استخدام 8 أرقام 8 بالظبط (3+2+1+1+1)." },
-    { q:"لو بعد بكرة هيبقى يوم الخميس، فإيه اليوم اللي كان قبلها بـ3 أيام؟", opts:["الجمعة","السبت","الأحد","الاثنين"], correct:1,
-      explain:"لو بعد بكرة الخميس، يبقى النهارده الثلاثاء. قبل الثلاثاء بـ3 أيام هو السبت." },
-    { q:"زهرة زنبق في بحيرة بتتضاعف مساحتها كل يوم، وبعد 48 يوم بتغطي البحيرة كلها. في أي يوم غطت نصها بس؟", opts:["46","47","24","48"], correct:1,
-      explain:"بما إنها بتتضاعف كل يوم، يبقى اليوم اللي قبل التغطية الكاملة (47) كانت فيه نص المساحة بس." },
-    { q:"كام مرة بيتقابل فيها عقربا الساعة (الساعات والدقايق) خلال 24 ساعة؟", opts:["24 مرة","22 مرة","20 مرة","12 مرة"], correct:1,
-      explain:"العقربين بيتقابلوا 11 مرة كل 12 ساعة، فيبقى في 24 ساعة = 22 مرة." },
-    { q:"راجل بنى بيت كل جدرانه الأربعة بتواجه الجنوب. إيه لون الدب اللي بيظهر قدامه؟", opts:["بني","أسود","أبيض","لا يوجد دب"], correct:2,
-      explain:"ده ممكن يحصل بس لو البيت في القطب الشمالي بالظبط، والدب اللي هناك هو الدب القطبي الأبيض." },
-    { q:"3 أرقام متتالية حاصل ضربهم 990، إيه هما؟", opts:["8، 9، 10","9، 10، 11","10، 11، 12","11، 12، 13"], correct:1,
-      explain:"9 × 10 × 11 = 990." }
+    {
+      "id": 1,
+      "question": "إذا كان 5 عمال يحفرون 5 حفر في 5 ساعات، فكم حفرة يحفرها 10 عمال في 10 ساعات؟",
+      "options": ["10", "20", "25", "50"],
+      "correctIndex": 1,
+      "timeLimit": 60,
+      "explain": "كل عامل يحفر حفرة واحدة في 5 ساعات. في 10 ساعات، العامل يحفر حفرتين. 10 عمال × حفرتين = 20 حفرة."
+    },
+    {
+      "id": 2,
+      "question": "قفص فيه أرانب ودجاج، عدد الرؤوس 35 وعدد الأرجل 94. كم أرنبًا في القفص؟",
+      "options": ["12", "15", "20", "23"],
+      "correctIndex": 0,
+      "timeLimit": 60,
+      "explain": "نفرض الأرانب = أ، الدجاج = د. أ + د = 35، 4أ + 2د = 94. بطرح 2×(أ+د)=70 من الثانية: 2أ=24 → أ=12 أرنبًا."
+    },
+    {
+      "id": 3,
+      "question": "ما هي الدولة التي تضم أكبر عدد من الجزر في العالم؟",
+      "options": ["إندونيسيا", "الفلبين", "السويد", "اليابان"],
+      "correctIndex": 2,
+      "timeLimit": 60,
+      "explain": "السويد تمتلك أكثر من 200 ألف جزيرة، وهي الأكبر عددًا في العالم."
+    },
+    {
+      "id": 4,
+      "question": "ما هما العددان اللذان إذا ضربتهما في نفسيهما كان الناتج يساوي ضعفهما؟",
+      "options": ["0 فقط", "2 فقط", "0 و2 معًا", "1 و2"],
+      "correctIndex": 2,
+      "timeLimit": 60,
+      "explain": "نبحث عن س يحقق س² = 2س → س(س-2)=0 → س=0 أو س=2، إذن العددان هما 0 و2 معًا."
+    },
+    {
+      "id": 5,
+      "question": "كم عدد المربعات الكلية في رقعة شطرنج قياسها 8×8؟",
+      "options": ["64", "128", "204", "256"],
+      "correctIndex": 2,
+      "timeLimit": 60,
+      "explain": "مجموع مربعات الأحجام: 1²+2²+...+8² = 1+4+9+16+25+36+49+64 = 204 مربعات."
+    },
+    {
+      "id": 6,
+      "question": "لديك 10 أكياس من العملات، كل كيس به 10 عملات. أحد الأكياس كل عملاته مزيفة وتزن كل عملة 1 جرام أقل من الحقيقية. باستخدام ميزان رقمي مرة واحدة فقط، كيف تعرف الكيس المزيف؟",
+      "options": ["تزن كل الأكياس معًا", "تأخذ من كل كيس عددًا مختلفًا من العملات وتزنها مرة واحدة", "تزن كيسين فقط", "مستحيل"],
+      "correctIndex": 1,
+      "timeLimit": 60,
+      "explain": "تأخذ 1 من الأول، 2 من الثاني، ... 10 من العاشر. النقص في الوزن يساوي رقم الكيس المزيف."
+    },
+    {
+      "id": 7,
+      "question": "عمر الأب الآن ضعف عمر ابنه. قبل 10 سنوات كان عمر الأب ثلاثة أضعاف عمر الابن. كم عمر الأب الآن؟",
+      "options": ["30", "35", "40", "45"],
+      "correctIndex": 2,
+      "timeLimit": 60,
+      "explain": "نفرض الأب = أ، الابن = ب. أ = 2ب، أ-10 = 3(ب-10). بالتعويض: 2ب-10 = 3ب-30 → ب=20، فأ = 40."
+    },
+    {
+      "id": 8,
+      "question": "ما هو الرقم بالإنجليزية الذي ترتيب حروفه أبجديًا؟",
+      "options": ["One", "Forty", "Fifty", "Sixty"],
+      "correctIndex": 1,
+      "timeLimit": 60,
+      "explain": "Forty: حروف F-O-R-T-Y مرتبة أبجديًا حسب الترتيب الإنجليزي."
+    },
+    {
+      "id": 9,
+      "question": "ما هي أندر فصيلة دم في العالم؟",
+      "options": ["A سالب", "B سالب", "AB سالب", "O سالب"],
+      "correctIndex": 2,
+      "timeLimit": 60,
+      "explain": "AB سالب هي أندر الفصائل الدموية في العالم."
+    },
+    {
+      "id": 10,
+      "question": "لديك 12 كرة متطابقة، واحدة مختلفة الوزن (لا تعرف إذا كانت أثقل أم أخف). باستخدام ميزان ذي كفتين، ما أقل عدد أوزان تحتاجها لتحديد الكرة المختلفة؟",
+      "options": ["2", "3", "4", "5"],
+      "correctIndex": 1,
+      "timeLimit": 60,
+      "explain": "تحتاج إلى 3 وزنات فقط. تقسم إلى 4 مجموعات، وتزن 4 ضد 4، ثم تضيق المجموعة المشتبه بها، ثم تزن 3 ضد 3، وأخيرًا 1 ضد 1."
+    }
   ];
 
-  // ترتيب ظهور الأسئلة الأساسية (تبادل بين الأنواع بدل ما يتجمعوا)
-  // بيوزّع تلقائي بالدور على كل فئة لحد ما تخلص أسئلتها، مهما كان عددها
-  function buildMainQuestions(){
-    const groups = [
-      CULTURE.map(x => ({...x, type:"culture"})),
-      RIDDLE_MATH.map(x => ({...x, type:"riddle_math"})),
-      RIDDLE_LATERAL.map(x => ({...x, type:"riddle_lateral"}))
-    ];
-
-    const result = [];
-    let stillLeft = true;
-    while(stillLeft){
-      stillLeft = false;
-      for(const g of groups){
-        if(g.length){
-          result.push(g.shift());
-          stillLeft = true;
-        }
-      }
-    }
-    return result;
-  }
-
-  const MAIN_QUESTIONS = buildMainQuestions();
-  const BONUS_QUESTIONS_TYPED = BONUS_QUESTIONS.map(x => ({...x, type:"bonus"}));
+  const MAIN_QUESTIONS = REGULAR_QUESTIONS;
+  const BONUS_QUESTIONS_TYPED = BONUS_QUESTIONS;
 
   /* ============================================================
      3) Supabase client
@@ -984,15 +1109,15 @@
     score: 0,
     correctCount: 0,
     playerId: null,
-    round: "main",     // main | bonus
+    round: "main",
     qIndex: 0,
     bonusStartScore: 0,
     timerHandle: null,
     timerDeadline: 0,
     timerTotal: 0,
     answered: false,
-    questionActive: false,   // true من وقت ظهور السؤال لحد ما يتجاوب، لأغراض كشف الغش
-    answerLog: [],           // سجل كل سؤال اتجاوب عليه (لعرضه في شاشة التفسيرات)
+    questionActive: false,
+    answerLog: [],
     cameFromScreen: "screen-final"
   };
 
@@ -1029,17 +1154,12 @@
 
   function localKey(k){ return "quiz_challenge_" + k; }
 
-  /* ============================================================
-     6.5) checkAlreadyPlayedOnLoad (معدلة للتحقق من الإصدار)
-  ============================================================ */
   function checkIfAlreadyPlayedOnLoad(){
     const saved = localStorage.getItem(localKey("result"));
     if(saved){
       try{
         const data = JSON.parse(saved);
-        // تحقق من الإصدار
         if(data.version && data.version === CONFIG.appVersion){
-          // نفس الإصدار → سبق اللعب بهذا الإصدار
           state.name = data.name;
           state.avatar = data.avatar;
           state.score = data.score;
@@ -1055,14 +1175,12 @@
           $("already-correct").textContent = `${data.correct}/20`;
           return true;
         } else {
-          // إصدار مختلف → امسح البيانات المحلية واعتبره لم يلعب
           localStorage.removeItem(localKey("result"));
           localStorage.removeItem(localKey("answerLog"));
           localStorage.removeItem(localKey("playerId"));
           return false;
         }
       }catch(e){
-        // بيانات تالفة → امسح واعتبر لم يلعب
         localStorage.removeItem(localKey("result"));
         localStorage.removeItem(localKey("answerLog"));
         localStorage.removeItem(localKey("playerId"));
@@ -1073,7 +1191,7 @@
   }
 
   /* ============================================================
-     7) Quiz engine (shared between main & bonus)
+     7) Quiz engine
   ============================================================ */
   function currentQuestionSet(){
     return state.round === "main" ? MAIN_QUESTIONS : BONUS_QUESTIONS_TYPED;
@@ -1092,7 +1210,7 @@
     el.textContent = state.score;
     if(bump){
       el.classList.remove("bump");
-      void el.offsetWidth; // restart animation
+      void el.offsetWidth;
       el.classList.add("bump");
     }
   }
@@ -1105,32 +1223,17 @@
     const total = set.length;
     const isMain = state.round === "main";
 
-    // progress
+    $("type-badge").classList.add("hidden");
+
     const pct = Math.round(((state.qIndex) / total) * 100);
     $("progress-fill").style.width = pct + "%";
     $("progress-caption-left").textContent = `سؤال ${state.qIndex + 1} من ${total}`;
     $("progress-caption-right").textContent = isMain ? "الجولة الأساسية" : "🎲 Bonus Round";
 
-    // type badge
-    const badge = $("type-badge");
-    if(isMain){
-      const meta = TYPE_META[q.type];
-      badge.textContent = `${meta.icon} ${meta.label}`;
-      badge.style.color = meta.color;
-      badge.style.background = meta.deep;
-      badge.style.border = "1px solid " + meta.color;
-    } else {
-      badge.textContent = "🎲 مخاطرة — صح +20 / غلط -12";
-      badge.style.color = "var(--red)";
-      badge.style.background = "var(--red-deep)";
-      badge.style.border = "1px solid var(--red)";
-    }
-
-    // question + options
     $("question-text").textContent = q.q;
     const optsList = $("options-list");
     optsList.innerHTML = "";
-    q.opts.forEach((optText, idx) => {
+    q.options.forEach((optText, idx) => {
       const btn = document.createElement("button");
       btn.className = "option-btn";
       btn.textContent = optText;
@@ -1140,8 +1243,7 @@
     $("feedback-row").textContent = "";
     $("feedback-row").className = "feedback-row";
 
-    // timer
-    const timerSeconds = isMain ? CONFIG.timers[q.type] : CONFIG.timers.bonus;
+    const timerSeconds = q.timeLimit || 30;
     startTimer(timerSeconds);
   }
 
@@ -1168,7 +1270,7 @@
 
       if(remainMs <= 0){
         clearTimer();
-        if(!state.answered){ onAnswer(-1); } // timeout = ما جاوبش
+        if(!state.answered){ onAnswer(-1); }
         return;
       }
       state.timerHandle = requestAnimationFrame(tick);
@@ -1183,21 +1285,12 @@
     }
   }
 
-  // نظام بونص الوقت بقى مقسّم 3 تلتات بدل التدرّج المستمر:
-  // جاوبت في التلت الأول من الوقت -> أقصى بونص
-  // جاوبت في التلت التاني         -> بونص متوسط
-  // جاوبت في التلت التالت         -> أقل بونص
-  function computeSpeedBonus(type, elapsedSeconds, totalSeconds){
-    const p = CONFIG.points[type];
-    const ratio = Math.min(1, Math.max(0, elapsedSeconds / totalSeconds));
-
-    if(ratio <= 1/3){
-      return p.bonusMax;
-    } else if(ratio <= 2/3){
-      return Math.round((p.bonusMax + p.bonusMin) / 2);
-    } else {
-      return p.bonusMin;
-    }
+  function computeSpeedBonus(timeLimit, elapsedSeconds){
+    const ratio = Math.min(1, Math.max(0, elapsedSeconds / timeLimit));
+    const { bonusMax, bonusMin } = CONFIG.points;
+    if(ratio <= 1/3) return bonusMax;
+    if(ratio <= 2/3) return Math.round((bonusMax + bonusMin) / 2);
+    return bonusMin;
   }
 
   function onAnswer(selectedIdx, isCheatFlag){
@@ -1209,12 +1302,12 @@
     const set = currentQuestionSet();
     const q = set[state.qIndex];
     const isMain = state.round === "main";
-    const isCorrect = !isCheatFlag && selectedIdx === q.correct;
+    const isCorrect = !isCheatFlag && selectedIdx === q.correctIndex;
 
     const optionBtns = document.querySelectorAll("#options-list .option-btn");
     optionBtns.forEach((btn, idx) => {
       btn.classList.add("disabled-opt");
-      if(idx === q.correct) btn.classList.add("correct");
+      if(idx === q.correctIndex) btn.classList.add("correct");
       if(idx === selectedIdx && !isCorrect) btn.classList.add("wrong");
     });
 
@@ -1222,8 +1315,8 @@
     if(isMain){
       if(isCorrect){
         const elapsed = state.timerTotal - Math.max(0, (state.timerDeadline - Date.now())/1000);
-        const speedBonus = computeSpeedBonus(q.type, elapsed, state.timerTotal);
-        pointsGained = CONFIG.points[q.type].base + speedBonus;
+        const speedBonus = computeSpeedBonus(q.timeLimit || 30, elapsed);
+        pointsGained = CONFIG.points.base + speedBonus;
         state.correctCount++;
       }
     } else {
@@ -1235,11 +1328,10 @@
 
     state.answerLog.push({
       q: q.q,
-      opts: q.opts,
-      correct: q.correct,
+      opts: q.options,
+      correct: q.correctIndex,
       selectedIdx: isCheatFlag ? -2 : selectedIdx,
       explain: q.explain || "",
-      type: q.type,
       round: state.round
     });
 
@@ -1270,11 +1362,11 @@
   }
 
   /* ============================================================
-     8) End of round handling (معدل لإدارة الإصدار)
+     8) End of round
   ============================================================ */
   async function finishRound(){
     if(state.round === "main"){
-      await savePlayerToSupabase();  // سيتم التحديث أو الإدراج
+      await savePlayerToSupabase();
       showMainResult();
     } else {
       await updatePlayerAfterBonus();
@@ -1282,11 +1374,7 @@
     }
   }
 
-  /* ============================================================
-     8.1) savePlayerToSupabase (معدل: تحديث أو إدراج مع version)
-  ============================================================ */
   async function savePlayerToSupabase(){
-    // حفظ محلي مع الإصدار
     const resultData = {
       name: state.name,
       avatar: state.avatar,
@@ -1299,7 +1387,6 @@
 
     if(!supabaseClient) return;
     try{
-      // 1. ابحث عن لاعب بنفس الاسم
       const { data: existing, error: findError } = await supabaseClient
         .from("players")
         .select("id")
@@ -1310,7 +1397,6 @@
 
       let playerId = null;
       if(existing && existing.length > 0){
-        // لاعب موجود → تحديث
         const id = existing[0].id;
         const { error: updateError } = await supabaseClient
           .from("players")
@@ -1319,13 +1405,12 @@
             score: state.score,
             correct_answers: state.correctCount,
             version: CONFIG.appVersion,
-            bonus_played: false   // نعيد تعيين البونوس مع كل تحديث إصدار
+            bonus_played: false
           })
           .eq("id", id);
         if(updateError) throw updateError;
         playerId = id;
       } else {
-        // لاعب غير موجود → إدراج
         const { data: inserted, error: insertError } = await supabaseClient
           .from("players")
           .insert({
@@ -1346,18 +1431,14 @@
       localStorage.setItem(localKey("playerId"), playerId);
     }catch(e){
       console.error("Save/update failed", e);
-      // في حالة فشل التحديث/الإدراج، يظل اللاعب شاهداً نتيجته محلياً
     }
   }
 
-  /* ============================================================
-     8.2) updatePlayerAfterBonus (معدل لتضمين version)
-  ============================================================ */
   async function updatePlayerAfterBonus(){
     const savedResult = JSON.parse(localStorage.getItem(localKey("result")) || "{}");
     savedResult.score = state.score;
     savedResult.correct = state.correctCount;
-    savedResult.version = CONFIG.appVersion;   // تأكيد الإصدار
+    savedResult.version = CONFIG.appVersion;
     localStorage.setItem(localKey("result"), JSON.stringify(savedResult));
     localStorage.setItem(localKey("answerLog"), JSON.stringify(state.answerLog));
 
@@ -1376,9 +1457,6 @@
     }
   }
 
-  /* ============================================================
-     8.3) showMainResult & showFinalResult (بدون تغيير)
-  ============================================================ */
   async function showMainResult(){
     showOnly("screen-result");
     $("result-score").textContent = state.score;
@@ -1417,7 +1495,7 @@
   }
 
   /* ============================================================
-     9) Bonus round flow
+     9) Bonus flow
   ============================================================ */
   function startBonusRound(){
     state.round = "bonus";
@@ -1468,7 +1546,7 @@
     empty.classList.add("hidden");
 
     const top3 = players.slice(0, 3);
-    const order = [1, 0, 2]; // نعرض التاني - الأول - التالت بصرياً
+    const order = [1, 0, 2];
     order.forEach(i => {
       const p = top3[i];
       const slot = document.createElement("div");
@@ -1504,7 +1582,7 @@
   }
 
   /* ============================================================
-     9.5) شاشة التفسيرات
+     11) Explanations screen
   ============================================================ */
   function openExplanations(fromScreenId){
     state.cameFromScreen = fromScreenId || "screen-final";
@@ -1572,9 +1650,8 @@
     });
   }
 
-
   /* ============================================================
-     10.5) منع الغش (بدون تغيير)
+     12) Anti-cheat
   ============================================================ */
   function setupAntiCheat(){
     document.addEventListener("contextmenu", e => e.preventDefault());
@@ -1598,7 +1675,7 @@
   }
 
   /* ============================================================
-     11) دالة handleStart (بدون تغيير)
+     13) Start handler
   ============================================================ */
   async function handleStart(){
     const nameInput = $("name-input");
@@ -1635,7 +1712,6 @@
       }
     }catch(e){
       console.error("Name check failed", e);
-      // نكمل حتى لو فشل التحقق، عشان تجربة اللعب ما تتعطلش بالكامل
     }
 
     state.name = name;
@@ -1650,9 +1726,6 @@
     startQuizRound();
   }
 
-  /* ============================================================
-     12) showFinalFromSkip (بدون تغيير)
-  ============================================================ */
   async function showFinalFromSkip(){
     state.bonusStartScore = state.score;
     showOnly("screen-final");
@@ -1665,7 +1738,7 @@
   }
 
   /* ============================================================
-     13) التهيئة
+     14) Init
   ============================================================ */
   function init(){
     renderAvatarGrid();
