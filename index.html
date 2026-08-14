@@ -835,7 +835,7 @@
     bonusRound: { correctPoints: 20, wrongPenalty: -12 },
     leaderboardLimit: 20,
     avatars: ["😎","🦁","🐯","🚀","🔥","🎯","🐺","🦊","👾","🎮","🧠","⚡","🐸","🦄","🌟"],
-    appVersion: "4.0"   // <-- تم الترقية لإعادة تعيين البيانات تلقائياً
+    appVersion: "4.1"   
   };
 
   /* ============================================================
@@ -1230,7 +1230,9 @@
     $("progress-caption-left").textContent = `سؤال ${state.qIndex + 1} من ${total}`;
     $("progress-caption-right").textContent = isMain ? "الجولة الأساسية" : "🎲 Bonus Round";
 
-    $("question-text").textContent = q.q;
+    // التصحيح الأساسي: استخدام q.question بدلاً من q.q
+    $("question-text").textContent = q.question;
+    
     const optsList = $("options-list");
     optsList.innerHTML = "";
     q.options.forEach((optText, idx) => {
@@ -1326,8 +1328,9 @@
     state.score = Math.max(0, state.score + pointsGained);
     updateScoreDisplay(true);
 
+    // التصحيح الأساسي: استخدام q.question بدلاً من q.q في سجل التفسيرات
     state.answerLog.push({
-      q: q.q,
+      q: q.question,
       opts: q.options,
       correct: q.correctIndex,
       selectedIdx: isCheatFlag ? -2 : selectedIdx,
